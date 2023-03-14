@@ -35,7 +35,7 @@ def get_voice_url(message: dict) -> str:
 
 def send_message(chat_id: int, message: str) -> None:
     info('start')
-    if not message:
+    if not chat_id or not message:
         info('finish')
         return
 
