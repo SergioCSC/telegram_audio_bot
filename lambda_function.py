@@ -20,12 +20,11 @@ def _get_chat_id_and_text(event: dict) -> tuple[int, str]:
     update_message = tg.get_update_message(event)
     info(f'{update_message = }')
     if not update_message or not update_message.get('voice'):
-        return 0, ''        
+        return 0, ''
 
     chat_id = int(update_message.get('chat', {}).get('id', 0))
     result_text = _get_text(update_message) if chat_id else ''
     return chat_id, result_text
-
 
 
 def _get_text(message: dict) -> str:

@@ -50,7 +50,7 @@ def send_message(chat_id: int, message: str) -> None:
         )
     
     try:
-        result = requests.post(telegram_request_url)
+        result = requests.get(telegram_request_url)
         logging.info(f'{telegram_request_url = }')
         if result.status_code != 200:
             logging.info(f'{telegram_request_url = }\n{result.text = }')
