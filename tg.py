@@ -33,6 +33,17 @@ def get_voice_url(message: dict) -> str:
     return voice_url
 
 
+def delete_webhook() -> None:
+    delete_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{api_keys.TELEGRAM_BOT_TOKEN}' \
+        '/deletewebhook'
+    requests.get(delete_webhook_url)
+    
+
+def set_webhook() -> None:
+    set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{api_keys.TELEGRAM_BOT_TOKEN}' \
+        f'/setwebhook?url={api_keys.AWS_LAMBDA_API_GATEWAY_URL}'
+
+
 def send_message(chat_id: int, message: str) -> None:
     info('start')
     if not chat_id or not message:
