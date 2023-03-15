@@ -15,7 +15,7 @@ def get_text(voice_wav: io.BytesIO) -> str:
                         #    'Content-Type': 'multipart/form-data'
                }
     files = [('file', ('audio.wav', voice_wav, 'audio/wav'))]
-    data = {'model': 'whisper-1', 'language': 'ru'}
+    data = {'model': 'whisper-1', 'language': 'ru'}  # TODO get language from Telegram update language_code
     response = requests.post(url=OPENAI_TRANSCRIPTIONS_URL, 
                   headers=headers,
                   files=files,
