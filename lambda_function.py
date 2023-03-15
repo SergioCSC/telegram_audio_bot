@@ -25,18 +25,24 @@ def lambda_handler(event: dict, context) -> dict:
 def _get_chat_id_and_text(message: dict) -> tuple[int, str]:
     debug('start')
     info(f'{message = }')
-    if not message or not message.get('voice'):
+    if not message:
         return 0, ''
 
     chat_id = int(message.get('chat', {}).get('id', 0))
     if not chat_id:
         return 0, ''
-    voice_url = tg.get_voice_url(message)
-    wav_in_memory = transcoder.transcode_opus_ogg_to_wav(voice_url)
-    message_text = transcriptor.get_text(wav_in_memory)
-    info(f'{message_text = }')
+    if message.get('voice'):
+        voice_url = tg.get_voice_url(message)
+        wav_in_memory = transcoder.transcode_opus_ogg_to_wav(voice_url)
+        output_text = transcriptor.get_text(wav_in_memory)
+    
+    elif input_text := message.get('text'):
+        output_text = transcriptor.chat(input_text)
+    else:
+        output_text = ''
+    info(f'{output_text = }')
     debug('finish')
-    return chat_id, message_text
+    return chat_id, output_text
 
 
 def _init_logging() -> None:
