@@ -41,7 +41,8 @@ def delete_webhook() -> None:
 
 def set_webhook() -> None:
     set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{api_keys.TELEGRAM_BOT_TOKEN}' \
-        f'/setwebhook?url={api_keys.AWS_LAMBDA_API_GATEWAY_URL}'
+        f'/setwebhook?url={api_keys.AWS_LAMBDA_API_GATEWAY_URL}' \
+        f'&max_connections=1'
     requests.get(set_webhook_url)
 
 
