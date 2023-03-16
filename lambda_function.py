@@ -2,7 +2,7 @@ import config as cfg
 import api_keys
 import tg
 import transcoder
-import transcriptor
+import openai_conn
 
 import sys
 import time
@@ -33,10 +33,10 @@ def _get_chat_id_and_text(message: dict) -> tuple[int, str]:
     if message.get('voice'):
         voice_url = tg.get_voice_url(message)
         wav_in_memory = transcoder.transcode_opus_ogg_to_wav(voice_url)
-        output_text = transcriptor.get_text(wav_in_memory)
+        output_text = openai_conn.get_text(wav_in_memory)
     
     elif input_text := message.get('text'):
-        output_text = transcriptor.chat(input_text)
+        output_text = openai_conn.chat(input_text)
     else:
         output_text = ''
     info(f'{output_text = }')
