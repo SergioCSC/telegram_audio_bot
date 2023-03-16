@@ -21,7 +21,7 @@ def lambda_handler(event: dict, context) -> dict:
     return {'statusCode': 200, 'body': 'Success'}
 
 
-def _get_chat_id_and_text(message: dict) -> tuple[int, str]:
+def _get_chat_id_and_text(message: dict, chat_temp: float = 1) -> tuple[int, str]:
     debug('start')
     info(f'{message = }')
     if not message:
@@ -33,12 +33,13 @@ def _get_chat_id_and_text(message: dict) -> tuple[int, str]:
     if message.get('voice'):
         voice_url = tg.get_voice_url(message)
         wav_in_memory = transcoder.transcode_opus_ogg_to_wav(voice_url)
-        output_text = openai_conn.get_text(wav_in_memory)
+        output_text = openai_conn.wav2text(wav_in_memory)
     
     elif input_text := message.get('text'):
-        output_text = openai_conn.chat(input_text)
+        output_text = openai_conn.chat(input_text, chat_temp)
     else:
-        output_text = ''
+        output_text = 'Кажется, я не умею того, чего вы хотите.' \
+            ' Я умею отвечать на текст и расшифровывать голосовые сообщения'
     info(f'{output_text = }')
     debug('finish')
     return chat_id, output_text

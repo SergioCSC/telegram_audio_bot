@@ -8,97 +8,90 @@ import lambda_function
 TEST_CHAT_ID = -1
 
 
-def test_1():  # very short voice
+def test_voice_1():  # very short voice
     file_id = 'AwACAgIAAxkBAAOXZA-7de2FoOIamPJLYCJICOAkyw4AAmAmAAIZ-IBI1p4117ajKzgvBA'
-    
-    message = get_message_from_file_id(file_id)
+
+    message = get_voice_message_from_file_id(file_id)
     _, text = lambda_function._get_chat_id_and_text(message)
     assert text == 'Субтитры делал DimaTorzok'
 
 
-def test_2():  # short voice with certain text
+def test_voice_2():  # short voice with certain text
     file_id = 'AwACAgIAAxkBAAOjZBAQaRzy2C_s43Hw2iyBMNCBxKgAAuwmAAIZ-IBIgJACXptgfmAvBA'
-    
-    message = get_message_from_file_id(file_id)
+
+    message = get_voice_message_from_file_id(file_id)
     _, text = lambda_function._get_chat_id_and_text(message)
     assert text == 'Проверка расшифровки'
 
 
-def test_3():  # big voice (> 25 Mb)
+def test_voice_3():  # big voice (> 25 Mb)
     file_id = 'AwACAgIAAxkBAAOlZBAZzwypqnCavQicUWXQi7v9KaUAApslAAJbWWlI3-G3OAcdrB8vBA'
-    message = get_message_from_file_id(file_id)
+    message = get_voice_message_from_file_id(file_id)
     _, text = lambda_function._get_chat_id_and_text(message)
     assert text == 'Статус код ответа OpenAI: 413\nСообщение об ошибке от OpenAI: Maximum content size limit (26214400) exceeded (36264744 bytes read)'
 
 
-def test_4():  # forwarded voice
-    message = {
-        "message_id": 111,
-        "from": {
-            "id": 1111111111,
-            "is_bot": False,
-            "first_name": "aaaaaaaaaa",
-            "username": "bbbbbbbbb", 
-            "language_code": "fr"
-        },
-        "chat": {
-            "id": 222222222,
-            "first_name": "ccccccccccc",
-            "username": "ddddddddddddd",
-            "type": "private"
-        },
-        "date": 3333333333,
-        "forward_from": {
+def test_voice_4():  # forwarded voice
+    file_id = 'AwACAgIAAxkBAAOjZBAQaRzy2C_s43Hw2iyBMNCBxKgAAuwmAAIZ-IBIgJACXptgfmAvBA'
+    message = get_voice_message_from_file_id(file_id)
+    message["forward_date"] = 333333333
+    message["forward_from"] = {
             "id": 4444444444,
             "is_bot": False,
             "first_name": "ttttttttt",
             "username": "rrrrrrrrrrr"
         },
-        "forward_date": 333333333,
-        "voice": {
-            "duration": 377,
-            "mime_type": "audio/ogg",
-            "file_id": "AwACAgIAAxkBAAOjZBAQaRzy2C_s43Hw2iyBMNCBxKgAAuwmAAIZ-IBIgJACXptgfmAvBA",
-            "file_unique_id": "QQQQQQQQQQQQ",
-            "file_size": 1461143
-        }
-    }
+
     _, text = lambda_function._get_chat_id_and_text(message)
     assert text == 'Проверка расшифровки'
 
 
-def get_message_from_file_id(file_id: str) -> dict:
+def test_chat_1():
+    message = TEMPLATE_TEXT_MESSAGE_WITHOUT_TEXT.copy()
+    message['text'] = 'Сколько ног у кошки?'
+    chat_temp = 0
+    _, text = lambda_function._get_chat_id_and_text(message, chat_temp=chat_temp)
+    assert text == '\n\nУ кошки четыре ноги.'
 
-    message = {
-        'message_id': 174, 
-        'from': {
-            'id': TEST_CHAT_ID, 
-            'is_bot': False, 
-            'first_name': 'SSS', 
-            'username': 'nn', 
-            'language_code': 'en'
-        }, 
-        'chat': {
-            'id': TEST_CHAT_ID, 
-            'first_name': 'SSS', 
-            'username': 'nn', 
-            'type': 'private'
-        }, 
-        'date': 1111111111, 
-        'voice': {
-            'duration': 1, 
-            'mime_type': 'audio/ogg', 
-            'file_id': file_id, 
-            'file_unique_id': 'AgAAAAAAAAAAAAAA', 
-            'file_size': 3147
-        }
-    }
+
+def get_voice_message_from_file_id(file_id: str) -> dict:
+
+    message = TEMPLATE_VOICE_MESSAGE_WITHOUT_FILE_ID.copy()
+    message.get('voice', {})['file_id'] = file_id
 
     return message
 
 
-EVENT_TEMPLATE_WITHOUT_BODY = \
-    {
+TEMPLATE_ANY_MESSAGE = {
+    'message_id': 174,
+    'from': {
+        'id': TEST_CHAT_ID,
+        'is_bot': False,
+        'first_name': 'SSS',
+        'username': 'nn',
+        'language_code': 'en'
+    },
+    'chat': {
+        'id': TEST_CHAT_ID,
+        'first_name': 'SSS',
+        'username': 'nn',
+        'type': 'private'
+    },
+    'date': 1111111111,
+}
+
+TEMPLATE_TEXT_MESSAGE_WITHOUT_TEXT = TEMPLATE_ANY_MESSAGE.copy()
+
+TEMPLATE_VOICE_MESSAGE_WITHOUT_FILE_ID = TEMPLATE_ANY_MESSAGE.copy()
+TEMPLATE_VOICE_MESSAGE_WITHOUT_FILE_ID['voice'] = {
+    'duration': 1,
+    'mime_type': 'audio/ogg',
+    'file_id': None,
+    'file_unique_id': 'AgAAAAAAAAAAAAAA',
+    'file_size': 3147,
+}
+
+TEMPLATE_EVENT_WITHOUT_BODY = {
         "version": "1.0",
         "resource": "",
         "path": "/default",
@@ -164,8 +157,9 @@ EVENT_TEMPLATE_WITHOUT_BODY = \
 
 
 if __name__ == '__main__':
-    test_1()
-    # test_2()
-    # test_3()
-    # test_4()
+    # test_voice_1()
+    # test_voice_2()
+    # test_voice_3()
+    # test_voice_4()
+    # test_chat_1()
     pass

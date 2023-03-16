@@ -11,7 +11,7 @@ OPENAI_TRANSCRIPTIONS_URL = 'https://api.openai.com/v1/audio/transcriptions'
 OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions'
 
 
-def get_text(voice_wav: io.BytesIO) -> str:
+def wav2text(voice_wav: io.BytesIO) -> str:
     debug('start')
     headers = {'Authorization': f'Bearer {api_keys.OPEN_AI_API_KEY}',
                         #    'Content-Type': 'multipart/form-data'
@@ -39,7 +39,7 @@ def get_text(voice_wav: io.BytesIO) -> str:
     # return transcript.text
     
     
-def chat(input_text: str) -> str:
+def chat(input_text: str, temperature: float = 1) -> str:
     debug('start')
 
     headers = {'Authorization': f'Bearer {api_keys.OPEN_AI_API_KEY}',
@@ -52,7 +52,8 @@ def chat(input_text: str) -> str:
                 "role": "user",
                 "content": input_text,
             }
-        ]
+        ],
+        "temperature": temperature
     })
 
     response = requests.post(url=OPENAI_CHAT_URL, 
