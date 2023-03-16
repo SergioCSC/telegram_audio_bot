@@ -42,6 +42,7 @@ def delete_webhook() -> None:
 def set_webhook() -> None:
     set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{api_keys.TELEGRAM_BOT_TOKEN}' \
         f'/setwebhook?url={api_keys.AWS_LAMBDA_API_GATEWAY_URL}'
+    requests.get(set_webhook_url)
 
 
 def send_message(chat_id: int, message: str) -> None:

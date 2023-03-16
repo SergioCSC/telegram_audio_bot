@@ -61,7 +61,7 @@ def chat(input_text: str) -> str:
                   )
     d = response.json()
     if response.status_code == 200:
-        text = d.get('text')
+        text = d.get('choices', [{}])[0].get('message', {}).get('content', '')
         if not text:
             text = 'Что-то не выходит нонче у Данилы каменный цветок ...'
     else:

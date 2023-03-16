@@ -14,7 +14,6 @@ from logging import info, debug
 def lambda_handler(event: dict, context) -> dict:
     _init_logging()
     debug('start')
-    tg.set_webhook()
     update_message = tg.get_update_message(event)
     chat_id, result_text = _get_chat_id_and_text(update_message)
     tg.send_message(chat_id, result_text)
