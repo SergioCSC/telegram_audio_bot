@@ -100,6 +100,8 @@ def telegram_long_polling():
 
 
 if __name__ == '__main__':
+    tg.delete_webhook()
+    # time.sleep(1)
     # tg.set_webhook()
     telegram_long_polling()
     pass

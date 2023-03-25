@@ -19,10 +19,10 @@ def wav2text(voice_wav: io.BytesIO) -> str:
     files = [('file', ('audio.wav', voice_wav, 'audio/wav'))]
     data = {'model': 'whisper-1', 'language': 'ru'}  # TODO get language from Telegram update language_code
     response = requests.post(url=OPENAI_TRANSCRIPTIONS_URL, 
-                  headers=headers,
-                  files=files,
-                  data=data,
-                  )
+            headers=headers,
+            files=files,
+            data=data,
+            )
     d = response.json()
     if response.status_code == 200:
         text = d.get('text')

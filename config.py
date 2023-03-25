@@ -1,4 +1,2 @@
-import os
-
-AWS_LAMBDA_FUNCTION_NAME_ENV = 'AWS_LAMBDA_FUNCTION_NAME'
-IN_AWS_LAMBDA = AWS_LAMBDA_FUNCTION_NAME_ENV in os.environ
+import sys
+IN_LINUX = sys.platform == 'linux'
