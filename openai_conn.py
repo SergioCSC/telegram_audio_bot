@@ -1,4 +1,4 @@
-import api_keys
+import load_keys
 
 import io
 import json
@@ -13,7 +13,7 @@ OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions'
 
 def wav2text(voice_wav: io.BytesIO) -> str:
     debug('start')
-    headers = {'Authorization': f'Bearer {api_keys.OPEN_AI_API_KEY}',
+    headers = {'Authorization': f'Bearer {load_keys.OPEN_AI_API_KEY}',
                         #    'Content-Type': 'multipart/form-data'
                }
     files = [('file', ('audio.wav', voice_wav, 'audio/wav'))]
@@ -42,7 +42,7 @@ def wav2text(voice_wav: io.BytesIO) -> str:
 def chat(input_text: str, temperature: float = 1) -> str:
     debug('start')
 
-    headers = {'Authorization': f'Bearer {api_keys.OPEN_AI_API_KEY}',
+    headers = {'Authorization': f'Bearer {load_keys.OPEN_AI_API_KEY}',
                'Content-Type': 'application/json'
               }
     data = json.dumps({
