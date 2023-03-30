@@ -54,7 +54,7 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
         output_text = openai_conn.chat(input_text, chat_temp)
 
     else:
-        assert False
+        assert False  # TODO really?
 
     info(f'{output_text = }')
     debug('finish')
@@ -68,7 +68,7 @@ def _init_logging() -> None:
             root_logger.removeHandler(handler)
     datefmt='%H:%M:%S'
     FORMAT = "[%(asctime)s %(filename)20s:%(lineno)5s - %(funcName)25s() ] %(message)s"
-    logging.basicConfig(level=logging.INFO,
+    logging.basicConfig(level=logging.DEBUG,
                         format=FORMAT, 
                         datefmt=datefmt,
                         stream=sys.stdout)
