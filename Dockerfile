@@ -1,6 +1,6 @@
-FROM python:3.12.0a6-slim-bullseye
+FROM public.ecr.aws/lambda/python:3.10
 
-WORKDIR /opt
+WORKDIR ${LAMBDA_TASK_ROOT}
 
 COPY requirements.txt .
 
@@ -14,4 +14,8 @@ COPY *.py .
 
 ENV LD_LIBRARY_PATH=./opus_linux/
 
-CMD python lambda_function.py
+#COPY entry.sh .
+#RUN chmod 755 ./entry.sh
+#ENTRYPOINT [ "./entry.sh" ]
+CMD ["lambda_function.lambda_handler"]
+#CMD ["sh"]
