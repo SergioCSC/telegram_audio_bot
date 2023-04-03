@@ -43,6 +43,14 @@ def lambda_handler(event: dict, context) -> dict:
     return SUCCESSFULL_RESPONSE
 
 
+def startswith(s: str, templates: list[str]) -> str:
+    s = s.lower()
+    for t in templates:
+        if s.startswith(t):
+            return t
+    return ''
+
+
 def _get_text(message: dict, chat_temp: float = 1) -> str:
     debug('start')
 
@@ -58,12 +66,16 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
         output_text = openai_conn.audio2text(wav_bytes_io, 'wav')
 
     elif input_text := message.get('text'):
-        key_phrases = ['correct:', 'corect:', 'исправь:', 'поправь:', 'правь:']
-        for key_phrase in key_phrases:
-            if input_text.lower().startswith(key_phrase):
-                input_text = 'Correct this to standard English:\n\n' \
-                        + input_text[len(key_phrase):]
-                break
+        key_phrases = ['correct:', 'corect:', 'translate:']
+        if key_phrase := startswith(input_text, key_phrases):
+            input_text = 'Correct this to standard English:\n\n' \
+                    + input_text[len(key_phrase):]
+
+        key_phrases = ['исправь:', 'поправь:', 'правь:', 'переведи:', 'перевод:']
+        if key_phrase := startswith(input_text, key_phrases):
+            input_text = 'Correct this to Russian:\n\n' \
+                    + input_text[len(key_phrase):]
+
         output_text = openai_conn.chat(input_text, chat_temp)
 
     else:
@@ -116,6 +128,6 @@ def telegram_long_polling():
 if __name__ == '__main__':
     # tg.delete_webhook()
     # time.sleep(1)
-    # tg.set_webhook()
+    tg.set_webhook()
     # telegram_long_polling()
     pass
