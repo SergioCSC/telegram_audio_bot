@@ -51,6 +51,29 @@ def startswith(s: str, templates: list[str]) -> str:
     return ''
 
 
+def correct_by_phrases(prompt: str, key_phrases: tuple[str], new_phrase: str) -> str:
+    if key_phrase := startswith(prompt, key_phrases):
+        prompt = new_phrase + '\n\n' + prompt[len(key_phrase):]
+        return prompt
+    return ''
+
+
+def correct_prompt(prompt: str) -> str:
+    key_phrases = ('correct:', 'corect:', 'исправь:', 'поправь:', 'правь:')
+    if corrected_prompt := correct_by_phrases(prompt, 
+            key_phrases, 
+            'Correct this text:'
+            ):
+        return corrected_prompt
+    
+    key_phrases = ('translate:', 'translation:', 'переведи:', 'перевод:')
+    if corrected_prompt := correct_by_phrases(prompt, 
+            key_phrases, 
+            'Translate text from standard English to Russian or vice versa:'
+            ):
+        return corrected_prompt
+    
+
 def _get_text(message: dict, chat_temp: float = 1) -> str:
     debug('start')
 
@@ -66,16 +89,7 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
         output_text = openai_conn.audio2text(wav_bytes_io, 'wav')
 
     elif input_text := message.get('text'):
-        key_phrases = ['correct:', 'corect:', 'translate:']
-        if key_phrase := startswith(input_text, key_phrases):
-            input_text = 'Correct this to standard English:\n\n' \
-                    + input_text[len(key_phrase):]
-
-        key_phrases = ['исправь:', 'поправь:', 'правь:', 'переведи:', 'перевод:']
-        if key_phrase := startswith(input_text, key_phrases):
-            input_text = 'Correct this to Russian:\n\n' \
-                    + input_text[len(key_phrase):]
-
+        input_text = correct_prompt(input_text)
         output_text = openai_conn.chat(input_text, chat_temp)
 
     else:
