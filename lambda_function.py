@@ -58,6 +58,12 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
         output_text = openai_conn.audio2text(wav_bytes_io, 'wav')
 
     elif input_text := message.get('text'):
+        key_phrases = ['correct:', 'corect:', 'исправь:', 'поправь:', 'правь:']
+        for key_phrase in key_phrases:
+            if input_text.lower().startswith(key_phrase):
+                input_text = 'Correct this to standard English:\n\n' \
+                        + input_text[len(key_phrase):]
+                break
         output_text = openai_conn.chat(input_text, chat_temp)
 
     else:
@@ -108,8 +114,8 @@ def telegram_long_polling():
 
 
 if __name__ == '__main__':
-    tg.delete_webhook()
+    # tg.delete_webhook()
     # time.sleep(1)
     # tg.set_webhook()
-    telegram_long_polling()
+    # telegram_long_polling()
     pass
