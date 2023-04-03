@@ -4,6 +4,7 @@ import tg
 import transcoder
 import openai_conn
 
+import io
 import sys
 import time
 import requests
@@ -27,7 +28,7 @@ def lambda_handler(event: dict, context) -> dict:
     if not chat_id:
         return SUCCESSFULL_RESPONSE
     
-    if 'voice' in update_message:
+    if 'voice' in update_message or 'audio' in update_message:
         tg.send_message(chat_id, 'Слушаю сообщение, думаю ...')
         result_text = _get_text(update_message)
     elif 'text' in update_message:
@@ -35,7 +36,7 @@ def lambda_handler(event: dict, context) -> dict:
         result_text = _get_text(update_message)
     else:
         result_text = 'Кажется, я не умею того, чего вы хотите.' \
-            ' Я умею отвечать на текст и расшифровывать голосовые сообщения'
+            ' Я умею отвечать на текст и расшифровывать аудио'
     
     tg.send_message(chat_id, result_text)
     debug('finish')
@@ -45,15 +46,22 @@ def lambda_handler(event: dict, context) -> dict:
 def _get_text(message: dict, chat_temp: float = 1) -> str:
     debug('start')
 
-    if message.get('voice'):
-        voice_url = tg.get_voice_url(message)
-        wav_in_memory = transcoder.transcode_opus_ogg_to_wav(voice_url)
-        output_text = openai_conn.wav2text(wav_in_memory)
+    if message.get('audio'):
+        audio_url = tg.get_audio_url(message)
+        response = requests.get(audio_url)
+        mp3_bytes_io = io.BytesIO(response.content)
+        output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
+        
+    elif message.get('voice'):
+        voice_url = tg.get_audio_url(message)
+        wav_bytes_io = transcoder.transcode_opus_ogg_to_wav(voice_url)
+        output_text = openai_conn.audio2text(wav_bytes_io, 'wav')
 
     elif input_text := message.get('text'):
         output_text = openai_conn.chat(input_text, chat_temp)
 
     else:
+        info(f"can't parse this type of message: {message}")
         assert False  # TODO really?
 
     info(f'{output_text = }')

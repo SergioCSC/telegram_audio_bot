@@ -11,12 +11,22 @@ OPENAI_TRANSCRIPTIONS_URL = 'https://api.openai.com/v1/audio/transcriptions'
 OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions'
 
 
-def wav2text(voice_wav: io.BytesIO) -> str:
+def audio2text(audio: io.BytesIO, voice_format: str) -> str:
     debug('start')
     headers = {'Authorization': f'Bearer {load_keys.OPEN_AI_API_KEY}',
                         #    'Content-Type': 'multipart/form-data'
                }
-    files = [('file', ('audio.wav', voice_wav, 'audio/wav'))]
+    
+    match voice_format:
+        case 'wav': 
+            file_format = 'audio/wav'
+        case 'mp3': 
+            file_format = 'audio/mpeg'
+        case _:
+            info(f'unknown audio format: {voice_format}')
+            assert False
+        
+    files = [('file', (f'audio.{voice_format}', audio, file_format))]
     data = {'model': 'whisper-1', 'language': 'ru'}  # TODO get language from Telegram update language_code
     response = requests.post(url=OPENAI_TRANSCRIPTIONS_URL, 
             headers=headers,
@@ -27,7 +37,7 @@ def wav2text(voice_wav: io.BytesIO) -> str:
     if response.status_code == 200:
         text = d.get('text')
         if not text:
-            text = 'Не смог найти слова в голосовухе, сорян'
+            text = 'Не смог найти слова в аудио, сорян'
     else:
         text = f'Статус код ответа OpenAI: {response.status_code}'
         if error_text := d.get('error', {}).get('message'):

@@ -21,8 +21,8 @@ def get_update_message(event: dict) -> dict:
     return message
 
 
-def get_voice_url(message: dict) -> str:
-    voice_id = message['voice']['file_id']
+def get_audio_url(message: dict) -> str:
+    voice_id = message.get('voice', message.get('audio'))['file_id']
     debug(f'{voice_id = }')
     get_file_url = f'{TELEGRAM_BOT_API_PREFIX}' \
             f'{load_keys.TELEGRAM_BOT_TOKEN}/getfile?file_id={voice_id}'
