@@ -5,7 +5,7 @@ FROM python:${RUNTIME_VERSION}-slim-${DISTRO_VERSION}
 
 RUN apt update && apt install -y libstdc++6 build-essential libtool autoconf cmake
 
-COPY requirements.txt .
+COPY deploy/requirements.txt .
 RUN python${RUNTIME_VERSION} -m pip install awslambdaric
 RUN python${RUNTIME_VERSION} -m pip install -r requirements.txt
 
