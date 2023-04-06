@@ -32,10 +32,10 @@ WORKDIR ${LAMBDA_TASK_ROOT}
     # & apt uninstall pip
     # & rm -rf /var/lib/apt/lists/*
 
-COPY opus_linux/ ./opus_linux/
+COPY opus/opus_linux/ ./opus/opus_linux/
 COPY *.py .
 
-ENV LD_LIBRARY_PATH=./opus_linux/
+ENV LD_LIBRARY_PATH=./opus/opus_linux/
 
 ENTRYPOINT ["python", "-m", "awslambdaric"]
 

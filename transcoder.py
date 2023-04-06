@@ -14,7 +14,7 @@ def transcode_opus_ogg_to_wav(source_url: str) -> io.BytesIO:
     if cfg.IN_LINUX:
         response = requests.get(source_url)
         ogg_bytes_io = response.content
-        opus_path = str(pathlib.Path('opus_linux', 'opusdec'))
+        opus_path = str(pathlib.Path('opus', 'opus_linux', 'opusdec'))
         result = subprocess.run([opus_path, 
                                 '--force-wav', 
                                 '-',
@@ -25,7 +25,7 @@ def transcode_opus_ogg_to_wav(source_url: str) -> io.BytesIO:
                             )
 
     else:
-        opus_path = str(pathlib.Path('opus_win', 'opusdec.exe'))
+        opus_path = str(pathlib.Path('opus', 'opus_win', 'opusdec.exe'))
         result = subprocess.run([opus_path, 
                                 '--force-wav', 
                                 source_url, 
