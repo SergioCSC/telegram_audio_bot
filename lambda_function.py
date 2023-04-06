@@ -1,13 +1,13 @@
 import config as cfg
-import load_keys
 import tg
 import transcoder
 import openai_conn
 
+import requests
+
 import io
 import sys
 import time
-import requests
 import logging
 from logging import info, debug
 
@@ -125,7 +125,7 @@ def telegram_long_polling():
     offset = -2
     while True: 
         start_time = time.time()
-        url = f'{tg.TELEGRAM_BOT_API_PREFIX}{load_keys.TELEGRAM_BOT_TOKEN}' \
+        url = f'{tg.TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
                 f'/getUpdates?offset={offset + 1}&timeout={timeout}'
         updates = requests.get(url).json()
 

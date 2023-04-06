@@ -1,8 +1,9 @@
-import load_keys
+import config as cfg
 
-import urllib
 import requests
+
 import json
+import urllib
 import logging
 from logging import info, debug
 
@@ -25,23 +26,23 @@ def get_audio_url(message: dict) -> str:
     voice_id = message.get('voice', message.get('audio'))['file_id']
     debug(f'{voice_id = }')
     get_file_url = f'{TELEGRAM_BOT_API_PREFIX}' \
-            f'{load_keys.TELEGRAM_BOT_TOKEN}/getfile?file_id={voice_id}'
+            f'{cfg.TELEGRAM_BOT_TOKEN}/getfile?file_id={voice_id}'
     result = requests.get(get_file_url)
     voice_path = result.json()['result']['file_path']
     voice_url = f'https://api.telegram.org/file/bot' \
-            f'{load_keys.TELEGRAM_BOT_TOKEN}/{voice_path}'
+            f'{cfg.TELEGRAM_BOT_TOKEN}/{voice_path}'
     return voice_url
 
 
 def delete_webhook() -> None:
-    delete_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{load_keys.TELEGRAM_BOT_TOKEN}' \
+    delete_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
         '/deletewebhook'
     requests.get(delete_webhook_url)
     
 
 def set_webhook() -> None:
-    set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{load_keys.TELEGRAM_BOT_TOKEN}' \
-        f'/setwebhook?url={load_keys.AWS_LAMBDA_API_GATEWAY_URL}' \
+    set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
+        f'/setwebhook?url={cfg.AWS_LAMBDA_API_GATEWAY_URL}' \
         f'&max_connections=2'
     requests.get(set_webhook_url)
 
@@ -56,7 +57,7 @@ def send_message(chat_id: int, message: str) -> None:
     
     telegram_request_url = (
             f'{TELEGRAM_BOT_API_PREFIX}'
-            f'{load_keys.TELEGRAM_BOT_TOKEN}'
+            f'{cfg.TELEGRAM_BOT_TOKEN}'
             f'/sendMessage'
             f'?chat_id={chat_id}'
             f'&text={message}'

@@ -1,10 +1,9 @@
 import config as cfg
 
-import io
-import os
-import sys
-import pathlib
 import requests
+
+import io
+import pathlib
 import subprocess
 from logging import info, debug
 

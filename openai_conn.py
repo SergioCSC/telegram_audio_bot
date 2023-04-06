@@ -1,8 +1,9 @@
-import load_keys
+import config as cfg
+
+import requests
 
 import io
 import json
-import requests
 
 from logging import info, debug
 
@@ -13,7 +14,7 @@ OPENAI_CHAT_URL = 'https://api.openai.com/v1/chat/completions'
 
 def audio2text(audio: io.BytesIO, voice_format: str) -> str:
     debug('start')
-    headers = {'Authorization': f'Bearer {load_keys.OPEN_AI_API_KEY}',
+    headers = {'Authorization': f'Bearer {cfg.OPEN_AI_API_KEY}',
                         #    'Content-Type': 'multipart/form-data'
                }
     
@@ -52,7 +53,7 @@ def audio2text(audio: io.BytesIO, voice_format: str) -> str:
 def chat(input_text: str, temperature: float = 1) -> str:
     debug('start')
 
-    headers = {'Authorization': f'Bearer {load_keys.OPEN_AI_API_KEY}',
+    headers = {'Authorization': f'Bearer {cfg.OPEN_AI_API_KEY}',
                'Content-Type': 'application/json'
               }
     data = json.dumps({
