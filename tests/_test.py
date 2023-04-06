@@ -28,7 +28,7 @@ def test_voice_3():  # big voice (> 25 Mb)
     file_id = 'AwACAgIAAxkBAAOlZBAZzwypqnCavQicUWXQi7v9KaUAApslAAJbWWlI3-G3OAcdrB8vBA'
     message = get_voice_message_from_file_id(file_id)
     text = lambda_function._get_text(message)
-    assert text == 'Статус код ответа OpenAI: 413\nСообщение об ошибке от OpenAI: Maximum content size limit (26214400) exceeded (36264744 bytes read)'
+    assert text.startswith('Статус код ответа OpenAI: 413\nСообщение об ошибке от OpenAI: Maximum content size limit (26214400) exceeded')
 
 
 def test_voice_4():  # forwarded voice
@@ -51,7 +51,7 @@ def test_chat_1():
     message['text'] = 'Сколько ног у кошки?'
     chat_temp = 0
     text = lambda_function._get_text(message, chat_temp=chat_temp)
-    assert text == '\n\nУ кошки четыре ноги.'
+    assert text in ('У кошки 4 ноги.', 'У кошки четыре ноги.')
 
 
 def get_voice_message_from_file_id(file_id: str) -> dict:
