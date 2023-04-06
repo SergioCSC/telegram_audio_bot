@@ -73,6 +73,8 @@ def correct_prompt(prompt: str) -> str:
             ):
         return corrected_prompt
     
+    return prompt
+    
 
 def _get_text(message: dict, chat_temp: float = 1) -> str:
     debug('start')
