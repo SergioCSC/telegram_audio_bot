@@ -1,3 +1,8 @@
+# This code uses opusdec library of opus audio codec 
+# under three-clause BSD license.
+# For details, see https://opus-codec.org/license/
+
+
 import config as cfg
 
 import requests
