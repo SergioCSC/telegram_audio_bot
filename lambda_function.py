@@ -58,7 +58,7 @@ def correct_by_phrases(prompt: str, key_phrases: tuple[str], new_phrase: str) ->
     return ''
 
 
-def correct_prompt(prompt: str) -> str:
+def _correct_prompt(prompt: str) -> str:
     key_phrases = ('correct:', 'corect:', 'исправь:', 'поправь:', 'правь:')
     if corrected_prompt := correct_by_phrases(prompt, 
             key_phrases, 
@@ -91,7 +91,7 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
         output_text = openai_conn.audio2text(wav_bytes_io, 'wav')
 
     elif input_text := message.get('text'):
-        input_text = correct_prompt(input_text)
+        input_text = _correct_prompt(input_text)
         output_text = openai_conn.chat(input_text, chat_temp)
 
     else:
@@ -142,8 +142,8 @@ def telegram_long_polling():
 
 
 if __name__ == '__main__':
-    # tg.delete_webhook()
-    # time.sleep(1)
-    tg.set_webhook()
-    # telegram_long_polling()
+    tg.delete_webhook()
+    time.sleep(1)
+    # tg.set_webhook()
+    telegram_long_polling()
     pass
