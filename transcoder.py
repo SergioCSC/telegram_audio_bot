@@ -2,18 +2,46 @@
 # under three-clause BSD license.
 # For details, see https://opus-codec.org/license/
 
+# This code uses LAME mp3 encoder of The LAME Project
+# under LGPL license.
+# For details, see https://lame.sourceforge.io/
+
 
 import config as cfg
 
 import requests
 
-import io
 import pathlib
 import subprocess
 from logging import info, debug
 
 
-def transcode_opus_ogg_to_wav(source_url: str) -> io.BytesIO:
+def transcode_wav_to_mp3(wav_bytes: bytes) -> bytes:
+    info('start')
+    
+    if cfg.IN_LINUX:
+        lame_path = str(pathlib.Path('lame'))  # apt install lame
+    else:
+        lame_path = str(pathlib.Path('lame', 'lame_win', 'lame.exe'))
+    
+    result = subprocess.run([lame_path,
+                                '-f',
+                                '-m',
+                                'm',
+                                '-',
+                                '-',
+                                ],
+                            input=wav_bytes,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    
+    mp3_bytes: bytes = result.stdout
+    debug(f'{result.stderr = }')
+    info('finish')
+    return mp3_bytes
+
+
+def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
     info('start')
     if cfg.IN_LINUX:
         response = requests.get(source_url)
@@ -39,9 +67,7 @@ def transcode_opus_ogg_to_wav(source_url: str) -> io.BytesIO:
                             )
 
     voice_wav_bytes: bytes = result.stdout
-    voice_wav_bytes_io = io.BytesIO(voice_wav_bytes)
-    voice_wav_bytes_io.name = 'my_voice_message.wav'
     
     debug(f'{result.stderr = }')
     info('finish')    
-    return voice_wav_bytes_io
+    return voice_wav_bytes

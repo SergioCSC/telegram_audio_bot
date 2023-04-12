@@ -53,22 +53,26 @@ def send_message(chat_id: int, message: str) -> None:
         info('finish')
         return
 
-    message = urllib.parse.quote(message.encode('utf-8'))
+    messages = [message[i: i + 4000] for i in range(0, len(message), 4000)]
+        
+    for message in messages:
+
+        message = urllib.parse.quote(message.encode('utf-8'))
     
-    telegram_request_url = (
-            f'{TELEGRAM_BOT_API_PREFIX}'
-            f'{cfg.TELEGRAM_BOT_TOKEN}'
-            f'/sendMessage'
-            f'?chat_id={chat_id}'
-            f'&text={message}'
-        )
+        telegram_request_url = (
+                f'{TELEGRAM_BOT_API_PREFIX}'
+                f'{cfg.TELEGRAM_BOT_TOKEN}'
+                f'/sendMessage'
+                f'?chat_id={chat_id}'
+                f'&text={message}'
+            )
     
-    try:
-        result = requests.get(telegram_request_url)
-        logging.info(f'{telegram_request_url = }')
-        if result.status_code != 200:
-            logging.info(f'{telegram_request_url = }\n{result.text = }')
-    except urllib.error.HTTPError as e:
-        logging.info(f'HTTPError for url: {telegram_request_url}\n\nException: {e}')
+        try:
+            result = requests.get(telegram_request_url)
+            logging.info(f'{telegram_request_url = }')
+            if result.status_code != 200:
+                logging.info(f'{telegram_request_url = }\n{result.text = }')
+        except urllib.error.HTTPError as e:
+            logging.info(f'HTTPError for url: {telegram_request_url}\n\nException: {e}')
 
     info('finish')
