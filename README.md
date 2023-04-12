@@ -45,25 +45,38 @@ My bot hosts on Amazon Lambda. If you want to host your bot there too:
 
   See the sample code of this parent function in *deploy/parent_aws_lambda_f.py*
 
-* Add *pandas* layer (version 3) to your Lambda function (it contains python *requests* library) 
-* upload the ZIP archive with this code (including the *opus* folder with the opus decoder library) in the Lambda function
+* Add *pandas* layer (version 3) to your Lambda function (it contains python *requests* library)
+* Add *lame* binary and *.so (from ```apt install lame```) to project root
+* Upload the ZIP archive with this code (including the *opus* folder with the opus decoder library) in the Lambda function
 
 &nbsp;
 ### Run locally
 
-If you want to run this code locally, you need to install the python library *requests*:
+If you want to run this code locally, you need to:
 
-```console
-pip install -r deploy/requirements.txt
-```
+* install lame library to convert wav to mp3:
+  ```console
+  apt install lame
+  ```
 
-Then, run
+* install the python library *requests*:
 
-```console
-python lambda_function.py
-```
+  ```console
+  pip install -r deploy/requirements.txt
+  ```
+
+* Then, run
+
+  ```console
+  python lambda_function.py
+  ```
 
 &nbsp;
 ## Third parties
-This code uses *opusdec* library of opus audio codec under the three-clause BSD license.
-For details, see https://opus-codec.org/license/
+* This code uses *opusdec* library of opus audio codec under the three-clause BSD license.
+  For details, see https://opus-codec.org/license/
+
+* This code uses LAME mp3 encoder of The LAME Project
+under LGPL license.
+  For details, see https://lame.sourceforge.io/
+

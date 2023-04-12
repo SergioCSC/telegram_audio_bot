@@ -3,7 +3,7 @@ ARG DISTRO_VERSION="bullseye"
 
 FROM python:${RUNTIME_VERSION}-slim-${DISTRO_VERSION}
 
-RUN apt update && apt install -y libstdc++6 build-essential libtool autoconf cmake
+RUN apt update && apt install -y libstdc++6 build-essential libtool autoconf cmake lame
 
 COPY deploy/requirements.txt .
 RUN python${RUNTIME_VERSION} -m pip install awslambdaric
