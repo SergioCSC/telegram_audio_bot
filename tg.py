@@ -14,7 +14,6 @@ TELEGRAM_BOT_API_PREFIX = 'https://api.telegram.org/bot'
 def get_update_message(event: dict) -> dict:
     if event.get('httpMethod') not in ('GET','POST'):  # event initiated by telegram
         return {}
-    debug(f'{event = }')
     update = event.get('body')
     assert update
     update = json.loads(update)
@@ -48,9 +47,9 @@ def set_webhook() -> None:
 
 
 def send_message(chat_id: int, message: str) -> None:
-    info('start')
+    debug('start')
     if not chat_id or not message:
-        info('finish')
+        info('not chat id or not message. Finish')
         return
 
     messages = [message[i: i + 4000] for i in range(0, len(message), 4000)]
@@ -69,10 +68,13 @@ def send_message(chat_id: int, message: str) -> None:
     
         try:
             result = requests.get(telegram_request_url)
-            logging.info(f'{telegram_request_url = }')
+            debug(f'{telegram_request_url = }')
             if result.status_code != 200:
-                logging.info(f'{telegram_request_url = }\n{result.text = }')
+                info(f'{result.status_code = } \
+                        \n{telegram_request_url = } \
+                        \n{result.text = }')
         except urllib.error.HTTPError as e:
-            logging.info(f'HTTPError for url: {telegram_request_url}\n\nException: {e}')
+            info(f'HTTPError for url: {telegram_request_url} \
+                    \n\nException: {e}')
 
-    info('finish')
+    debug('finish')

@@ -20,7 +20,7 @@ def lambda_handler(event: dict, context) -> dict:
     debug('start')
     update_message = tg.get_update_message(event)
     
-    info(f'{update_message = }')
+    debug(f'{update_message = }')
     if not update_message:
         return SUCCESSFULL_RESPONSE
     
@@ -101,7 +101,7 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
         info(f"can't parse this type of message: {message}")
         assert False  # TODO really?
 
-    info(f'{output_text = }')
+    debug(f'{output_text = }')
     debug('finish')
     return output_text
 
@@ -113,7 +113,7 @@ def _init_logging() -> None:
             root_logger.removeHandler(handler)
     datefmt='%H:%M:%S'
     FORMAT = "[%(asctime)s %(filename)20s:%(lineno)5s - %(funcName)25s() ] %(message)s"
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                         format=FORMAT, 
                         datefmt=datefmt,
                         stream=sys.stdout)
@@ -121,7 +121,7 @@ def _init_logging() -> None:
 
 def telegram_long_polling():
     _init_logging()
-    info('start')
+    debug('start')
     tg.delete_webhook()
 
     timeout = 60
@@ -141,7 +141,7 @@ def telegram_long_polling():
                     result_text = _get_text(message)
                     tg.send_message(chat_id, result_text)
         end_time = time.time()
-        info(f'Время между запросами к Telegram Bot API: {end_time - start_time}')
+        debug(f'Время между запросами к Telegram Bot API: {end_time - start_time}')
 
 
 if __name__ == '__main__':

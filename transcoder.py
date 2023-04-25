@@ -17,7 +17,7 @@ from logging import info, debug
 
 
 def transcode_wav_to_mp3(wav_bytes: bytes) -> bytes:
-    info('start')
+    debug('start')
     
     if cfg.IN_LINUX:
         lame_path = str(pathlib.Path('lame'))  # apt install lame
@@ -37,21 +37,21 @@ def transcode_wav_to_mp3(wav_bytes: bytes) -> bytes:
     
     mp3_bytes: bytes = result.stdout
     debug(f'{result.stderr = }')
-    info('finish')
+    debug('finish')
     return mp3_bytes
 
 
 def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
-    info('start')
+    debug('start')
     if cfg.IN_LINUX:
         response = requests.get(source_url)
-        ogg_bytes_io = response.content
+        ogg_bytes = response.content
         opus_path = str(pathlib.Path('opus', 'opus_linux', 'opusdec'))
         result = subprocess.run([opus_path, 
                                 '--force-wav', 
                                 '-',
                                 '-'],
-                                input=ogg_bytes_io,
+                                input=ogg_bytes,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE
                             )
@@ -69,5 +69,5 @@ def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
     voice_wav_bytes: bytes = result.stdout
     
     debug(f'{result.stderr = }')
-    info('finish')    
+    debug('finish')    
     return voice_wav_bytes
