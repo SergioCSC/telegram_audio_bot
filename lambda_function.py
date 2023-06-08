@@ -29,28 +29,30 @@ def lambda_handler(event: dict, context) -> dict:
         return SUCCESSFULL_RESPONSE
     
     if 'voice' in update_message or 'audio' in update_message:
-        tg.send_message(chat_id, 'Слушаю сообщение, думаю ...')
+        tg.send_message(chat_id, 'I am listening to you. Thinking ...')
         result_text = _get_text(update_message)
     elif 'text' in update_message:
         input_text = update_message.get('text')
         
         if not input_text or input_text.lower() == '/start':
             result_text = '''
-                    With me you can:
 
-                    * ask something from chatGPT: just text me
-                    * transcribe an audio or a voice message: send it to me
-                    * fix grammar in text in any language. Write "correct: my_text" or "правь: мой_текст"
-                    * Translate text into English or Russian. Write: "translate: my_text"  or "переведи: мой текст"
+With me you can:
 
-                    The bot doesn't collect any info. Author: @n_log_n
+  - Ask something from chatGPT: Just text me
+  - Transcribe an audio or a voice message: Send it to me
+  - Fix grammar in text in any language. Write "correct: my_text" or "правь: мой_текст"
+  - Translate text into English or Russian. Write: "translate: my_text"  or "переведи: мой текст"
+
+The bot doesn't collect any info. Author: @n_log_n
+
                     '''
         else:
-            tg.send_message(chat_id, 'Тут надо подумать. Сейчас ...')
+            tg.send_message(chat_id, 'I have to think about it. Just a moment ...')
             result_text = _get_text(update_message)
     else:
-        result_text = 'Кажется, я не умею того, чего вы хотите.' \
-            ' Я умею отвечать на текст и расшифровывать аудио'
+        result_text = "It seems I can't do what you want. \
+                I can answer to text and transcribe audio into text."
     
     tg.send_message(chat_id, result_text)
     debug('finish')
@@ -155,7 +157,7 @@ def telegram_long_polling():
                     result_text = _get_text(message)
                     tg.send_message(chat_id, result_text)
         end_time = time.time()
-        debug(f'Время между запросами к Telegram Bot API: {end_time - start_time}')
+        debug(f'time between requests to Telegram Bot API: {end_time - start_time}')
 
 
 if __name__ == '__main__':
