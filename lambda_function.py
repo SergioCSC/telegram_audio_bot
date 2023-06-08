@@ -32,8 +32,22 @@ def lambda_handler(event: dict, context) -> dict:
         tg.send_message(chat_id, 'Слушаю сообщение, думаю ...')
         result_text = _get_text(update_message)
     elif 'text' in update_message:
-        tg.send_message(chat_id, 'Тут надо подумать, прежде чем ответить. Сейчас ...')
-        result_text = _get_text(update_message)
+        input_text = update_message.get('text')
+        
+        if not input_text or input_text.lower() == '/start':
+            result_text = '''
+                    With me you can:
+
+                    * ask something from chatGPT: just text me
+                    * transcribe an audio or a voice message: send it to me
+                    * fix grammar in text in any language. Write "correct: my_text" or "правь: мой_текст"
+                    * Translate text into English or Russian. Write: "translate: my_text"  or "переведи: мой текст"
+
+                    The bot doesn't collect any info. Author: @n_log_n
+                    '''
+        else:
+            tg.send_message(chat_id, 'Тут надо подумать. Сейчас ...')
+            result_text = _get_text(update_message)
     else:
         result_text = 'Кажется, я не умею того, чего вы хотите.' \
             ' Я умею отвечать на текст и расшифровывать аудио'
