@@ -51,7 +51,7 @@ def startswith(s: str, templates: list[str]) -> str:
     return ''
 
 
-def correct_by_phrases(prompt: str, key_phrases: tuple[str], new_phrase: str) -> str:
+def correct_by_phrases(prompt: str, key_phrases: list[str], new_phrase: str) -> str:
     if key_phrase := startswith(prompt, key_phrases):
         prompt = new_phrase + '\n\n' + prompt[len(key_phrase):]
         return prompt
@@ -59,14 +59,14 @@ def correct_by_phrases(prompt: str, key_phrases: tuple[str], new_phrase: str) ->
 
 
 def _correct_prompt(prompt: str) -> str:
-    key_phrases = ('correct:', 'corect:', 'исправь:', 'поправь:', 'правь:')
+    key_phrases = ['correct:', 'corect:', 'исправь:', 'поправь:', 'правь:']
     if corrected_prompt := correct_by_phrases(prompt, 
             key_phrases, 
             'Correct this text:'
             ):
         return corrected_prompt
     
-    key_phrases = ('translate:', 'translation:', 'переведи:', 'перевод:')
+    key_phrases = ['translate:', 'translation:', 'переведи:', 'перевод:']
     if corrected_prompt := correct_by_phrases(prompt, 
             key_phrases, 
             'Translate text from standard English to Russian or vice versa:'

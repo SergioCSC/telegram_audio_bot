@@ -26,7 +26,7 @@ def audio2text(audio: io.BytesIO, voice_format: str) -> str:
         case _:
             info(f'unknown audio format: {voice_format}')
             assert False
-        
+
     files = [('file', (f'audio.{voice_format}', audio, file_format))]
     data = {'model': 'whisper-1', 'language': 'ru'}  # TODO get language from Telegram update language_code
     response = requests.post(url=OPENAI_TRANSCRIPTIONS_URL, 
