@@ -36,7 +36,7 @@ COPY --from=build ${FUNCTION_DIR} ${FUNCTION_DIR}
 # COPY --from=build usr/lib/x86_64-linux-gnu/libvorbisenc.so.2.0.12 /usr/lib/x86_64-linux-gnu/libvorbisenc.so.2
 
 COPY opus/opus_linux/ ./opus/opus_linux/
-COPY *.py .
+COPY *.py ./
 
 ENV LD_LIBRARY_PATH=./opus/opus_linux/
 
