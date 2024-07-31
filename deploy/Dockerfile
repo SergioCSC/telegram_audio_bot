@@ -40,6 +40,4 @@ COPY *.py ./
 
 ENV LD_LIBRARY_PATH=./opus/opus_linux/
 
-ENTRYPOINT ["python", "-m", "awslambdaric"]
-
-CMD ["lambda_function.lambda_handler"]
+ENTRYPOINT ["python", "run.py"]
