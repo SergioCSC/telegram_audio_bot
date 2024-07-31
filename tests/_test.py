@@ -155,6 +155,13 @@ TEMPLATE_EVENT_WITHOUT_BODY = {
         "isBase64Encoded": "False"
     }
 
+def test_voice_5():  # very short voice
+    file_id = 'AwACAgIAAxkBAAIF12alWkqG7-nAn0SD68FoXvW29tQ6AAJcUwACO7opSUe2GJBnu6pJNQQ'
+
+    message = get_voice_message_from_file_id(file_id)
+    text = lambda_function._get_text(message)
+    assert text == 'Субтитры делал DimaTorzok'
+
 
 if __name__ == '__main__':
     # test_voice_1()
