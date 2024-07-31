@@ -8,8 +8,8 @@ OPEN_AI_API_KEY = environ.get('OPEN_AI_API_KEY')
 TELEGRAM_BOT_TOKEN = environ['TELEGRAM_BOT_TOKEN']
 HUGGING_FACE_API_KEY = environ['HUGGING_FACE_API_KEY']
 
-HUGGING_FACE_OPENAI_WHISPER_MODEL = environ.get('HUGGING_FACE_OPENAI_WHISPER_MODEL',
-                                                'whisper-tiny')
+HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
+                                 'openai/whisper-tiny')
 
 
 IN_AWS_LAMBDA = 'AWS_LAMBDA_RUNTIME_API' in environ

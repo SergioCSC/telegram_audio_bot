@@ -6,7 +6,7 @@ import requests
 from time import sleep
 
 
-OPENAI_WHISPER_MODEL_URL_PREFIX = 'https://api-inference.huggingface.co/models/openai/'
+HUGGING_FACE_MODEL_URL_PREFIX = 'https://api-inference.huggingface.co/models/'
 
 
 def _post(url: str, headers: dict, data: bytes) -> tuple[requests.Response, dict]:
@@ -17,7 +17,7 @@ def _post(url: str, headers: dict, data: bytes) -> tuple[requests.Response, dict
 def audio2text(audio: bytes):
     debug('start')
     headers = {'Authorization': f'Bearer {cfg.HUGGING_FACE_API_KEY}'}
-    url = OPENAI_WHISPER_MODEL_URL_PREFIX + cfg.HUGGING_FACE_OPENAI_WHISPER_MODEL
+    url = HUGGING_FACE_MODEL_URL_PREFIX + cfg.HUGGING_FACE_MODEL
     response, returned_json = _post(url, headers, audio)
     while response.status_code == 503 and 'is currently loading' in returned_json.get('error', ''):
         # resubmit
