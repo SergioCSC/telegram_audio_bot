@@ -129,7 +129,7 @@ def _init_logging() -> None:
             root_logger.removeHandler(handler)
     datefmt='%H:%M:%S'
     FORMAT = "[%(asctime)s %(filename)20s:%(lineno)5s - %(funcName)25s() ] %(message)s"
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=cfg.LOG_LEVEL,
                         format=FORMAT, 
                         datefmt=datefmt,
                         stream=sys.stdout)
@@ -137,6 +137,7 @@ def _init_logging() -> None:
 
 def telegram_long_polling():
     _init_logging()
+    logging.getLogger().setLevel(logging.DEBUG)  # for local run
     debug('start')
     tg.delete_webhook()
     time.sleep(1)
@@ -162,7 +163,6 @@ def telegram_long_polling():
 
 
 if __name__ == '__main__':
-    tg.set_webhook()
-    # tg.delete_webhook()
-    # telegram_long_polling()
+    # tg.set_webhook()
+    telegram_long_polling()
     pass
