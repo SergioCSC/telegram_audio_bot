@@ -21,8 +21,9 @@ def audio2text(audio: bytes):
     response, returned_json = _post(url, headers, audio)
     while response.status_code == 503 and 'is currently loading' in returned_json.get('error', ''):
         # resubmit
-        debug('resubmitting')
-        sleep(returned_json.get('estimated_time', 20) + 1)    
+        sleeping_time = returned_json.get('estimated_time', 20) + 1
+        debug(f'sleeping for {sleeping_time} s. and resubmitting')
+        sleep(sleeping_time)
         response, returned_json = _post(url, headers, audio)
 
     # data = {'model': 'whisper-1', 'language': 'ru'}  # TODO get language from Telegram update language_code

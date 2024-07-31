@@ -105,12 +105,13 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
 
     elif message.get('voice'):
         voice_url = tg.get_audio_url(message)
-        wav_bytes = transcoder.transcode_opus_ogg_to_wav(voice_url)
-        mp3_bytes = transcoder.transcode_wav_to_mp3(wav_bytes)
+        response = requests.get(voice_url)
+        # wav_bytes = transcoder.transcode_opus_ogg_to_wav(voice_url)
+        # mp3_bytes = transcoder.transcode_wav_to_mp3(wav_bytes)
         # mp3_bytes_io: io.BytesIO = io.BytesIO(mp3_bytes)
         # mp3_bytes_io.name = 'my_audio_message.mp3'
         # output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
-        output_text = hugging_face_conn.audio2text(mp3_bytes)
+        output_text = hugging_face_conn.audio2text(response.content)
 
     elif input_text := message.get('text'):
         input_text = _correct_prompt(input_text)
