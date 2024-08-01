@@ -14,15 +14,16 @@ def _post(url: str, headers: dict, data: bytes) -> tuple[requests.Response, dict
     return response, response.json()
 
 
-def audio2text(audio: bytes):
+def audio2text(audio: bytes) -> str:
     debug('start')
     headers = {'Authorization': f'Bearer {cfg.HUGGING_FACE_API_KEY}'}
     url = HUGGING_FACE_MODEL_URL_PREFIX + cfg.HUGGING_FACE_MODEL
     response, returned_json = _post(url, headers, audio)
     while response.status_code == 503 and 'is currently loading' in returned_json.get('error', ''):
         # resubmit
-        sleeping_time = returned_json.get('estimated_time', 20) + 1
-        debug(f'sleeping for {sleeping_time} s. and resubmitting')
+        sleeping_time = int(returned_json.get('estimated_time', 20)) + 1
+        debug_text = f'Hugging face asked to wait for {sleeping_time} s. Sleeping ...'
+        debug(debug_text)
         sleep(sleeping_time)
         response, returned_json = _post(url, headers, audio)
 
@@ -36,6 +37,7 @@ def audio2text(audio: bytes):
         if error_text := str(returned_json.get('error', {})):
             text = f'{text}\nСообщение об ошибке от Hugging Face: {error_text}'
     debug('finish')
-    return text
+    return f'Hugging face responce:        \
+            \n{text}'
 
 # output = query("sample1.flac")

@@ -28,6 +28,7 @@ def lambda_handler(event: dict, context) -> dict:
     chat_id = int(update_message.get('chat', {}).get('id', 0))
     if not chat_id:
         return SUCCESSFULL_RESPONSE
+    tg.send_message(chat_id, f'Model: {cfg.HUGGING_FACE_MODEL}')
     
     if 'voice' in update_message or 'audio' in update_message:
         tg.send_message(chat_id, 'I am listening to you. Thinking ...')
@@ -95,22 +96,16 @@ def _correct_prompt(prompt: str) -> str:
 
 def _get_text(message: dict, chat_temp: float = 1) -> str:
     debug('start')
-
-    if message.get('audio'):
-        audio_url = tg.get_audio_url(message)
-        response = requests.get(audio_url)
-        # mp3_bytes_io = io.BytesIO(response.content)
-        # output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
-        output_text = hugging_face_conn.audio2text(response.content)
-
-    elif message.get('voice'):
+    if message.get('audio') or message.get('voice'):
         voice_url = tg.get_audio_url(message)
+        if message.get('voice'):
+            # wav_bytes = transcoder.transcode_opus_ogg_to_wav(voice_url)
+            # mp3_bytes = transcoder.transcode_wav_to_mp3(wav_bytes)
+            # mp3_bytes_io: io.BytesIO = io.BytesIO(mp3_bytes)
+            # mp3_bytes_io.name = 'my_audio_message.mp3'
+            # output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
+            pass
         response = requests.get(voice_url)
-        # wav_bytes = transcoder.transcode_opus_ogg_to_wav(voice_url)
-        # mp3_bytes = transcoder.transcode_wav_to_mp3(wav_bytes)
-        # mp3_bytes_io: io.BytesIO = io.BytesIO(mp3_bytes)
-        # mp3_bytes_io.name = 'my_audio_message.mp3'
-        # output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
         output_text = hugging_face_conn.audio2text(response.content)
 
     elif input_text := message.get('text'):
