@@ -25,7 +25,13 @@ def transcode_wav_to_mp3(wav_bytes: bytes) -> bytes:
         lame_path = str(pathlib.Path('lame', 'lame_win', 'lame.exe'))
     
     result = subprocess.run([lame_path,
+                                '-s',
+                                '16',
+                                '--resample',
+                                '16',
                                 '-f',
+                                '--abr',
+                                '56',
                                 '-m',
                                 'm',
                                 '-',
@@ -36,8 +42,8 @@ def transcode_wav_to_mp3(wav_bytes: bytes) -> bytes:
                             stderr=subprocess.PIPE)
     
     mp3_bytes: bytes = result.stdout
-    debug(f'{result.stderr = }')
-    debug('finish')
+    # debug(f'{result.stderr = }')
+    debug(f'finish')
     return mp3_bytes
 
 
@@ -48,7 +54,9 @@ def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
         ogg_bytes = response.content
         opus_path = str(pathlib.Path('opus', 'opus_linux', 'opusdec'))
         result = subprocess.run([opus_path, 
-                                '--force-wav', 
+                                '--force-wav',
+                                '--rate',
+                                '16000',
                                 '-',
                                 '-'],
                                 input=ogg_bytes,
@@ -59,7 +67,9 @@ def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
     else:
         opus_path = str(pathlib.Path('opus', 'opus_win', 'opusdec.exe'))
         result = subprocess.run([opus_path, 
-                                '--force-wav', 
+                                '--force-wav',
+                                '--rate',
+                                '16000',
                                 source_url, 
                                 '-'],
                                 stdout=subprocess.PIPE,
@@ -69,5 +79,5 @@ def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
     voice_wav_bytes: bytes = result.stdout
     
     debug(f'{result.stderr = }')
-    debug('finish')    
+    debug(f'finish')
     return voice_wav_bytes
