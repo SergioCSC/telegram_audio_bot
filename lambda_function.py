@@ -2,7 +2,7 @@ import config as cfg
 import tg
 import transcoder
 import openai_conn
-import hugging_face_conn
+import hugging_face_conn as hf
 
 import requests
 
@@ -96,17 +96,77 @@ def _correct_prompt(prompt: str) -> str:
 
 def _get_text(message: dict, chat_temp: float = 1) -> str:
     debug('start')
+    
+    model = cfg.HUGGING_FACE_MODEL
+    chat_id = message.get('chat', {}).get('id', 0)
+    
     if message.get('audio') or message.get('voice'):
         voice_url = tg.get_audio_url(message)
+        filename = message.get('audio', {}).get('file_name', '')
+        if filename:
+            prefix = f'Filename: {filename}'
+        else:
+            duration = message.get('audio', message.get('voice', {})) \
+                .get('duration', -1)
+            prefix = f'Duration: {duration} seconds'
+
         if message.get('voice'):
+            # send_text = 'Decoding OGG --> WAV ...'
+            # debug(send_text)
+            # tg.send_message(chat_id, send_text)
             # wav_bytes = transcoder.transcode_opus_ogg_to_wav(voice_url)
+            # send_text = f'WAV size: {len(wav_bytes)}\n\nEncoding WAV --> MP3 ...'
+            # debug(send_text)
+            # tg.send_message(chat_id, send_text)
             # mp3_bytes = transcoder.transcode_wav_to_mp3(wav_bytes)
+            # send_text = f'MP3 size: {len(mp3_bytes)}'
+            # debug(send_text)
+            # tg.send_message(chat_id, send_text)
             # mp3_bytes_io: io.BytesIO = io.BytesIO(mp3_bytes)
             # mp3_bytes_io.name = 'my_audio_message.mp3'
             # output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
             pass
+        tg.send_message(chat_id, f'{prefix}\nModel: {model} \
+                        \n\nGetting audio from Telegram ...')
         response = requests.get(voice_url)
-        output_text = hugging_face_conn.audio2text(response.content)
+        tg.send_message(chat_id, f'{prefix}\nModel: {model} \
+                        \n\nSending audio to Hugging face ...')
+        output_text, sleeping_time = hf.audio2text(model, response.content)
+
+        while 'Internal Server Error' in output_text \
+                or 'Service Unavailable' in output_text \
+                or 'is currently loading' in output_text:
+            
+            
+            output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
+            if 'Internal Server Error' in output_text \
+                    or 'Service Unavailable' in output_text:
+                if model == hf.downgrade(model):
+                    tg.send_message(chat_id, 
+                             f"Can't downgrade the smallest model.\n\nFinish"
+                            )
+                    break
+                debug(output_text)
+                tg.send_message(chat_id, 
+                        f'{output_text}                                             \
+                        \n\nDowngrade model to {hf.downgrade(model)} and repeat.    \
+                        \nSending audio to Hugging face ...'
+                        )
+                model = hf.downgrade(model)
+                output_text, sleeping_time  \
+                        = hf.audio2text(model, response.content)
+            
+            elif 'is currently loading' in output_text:
+                output_text = f'{output_text}   \
+                        \n\nPlease wait for {sleeping_time} seconds ...'
+                debug(output_text)
+                tg.send_message(chat_id, output_text)
+                time.sleep(sleeping_time)
+                tg.send_message(chat_id, 'Sending audio to Hugging face ...')
+                output_text, sleeping_time  \
+                        = hf.audio2text(model, response.content)
+        
+        output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
 
     elif input_text := message.get('text'):
         input_text = _correct_prompt(input_text)
