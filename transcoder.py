@@ -10,7 +10,9 @@
 import config as cfg
 
 import requests
+import audio_extract
 
+import tempfile
 import pathlib
 import subprocess
 from logging import info, debug
@@ -81,3 +83,31 @@ def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
     debug(f'{result.stderr = }')
     debug(f'finish')
     return voice_wav_bytes
+
+
+def extract_mp3_from_video(mp4_bytes: bytes, video_ext: str) -> bytes:
+    debug('start')
+    
+    with tempfile.NamedTemporaryFile(mode='wb', suffix=video_ext, 
+            delete_on_close=False) as video_file:
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.mp3',
+                ) as audio_file:
+            video_filename = video_file.name
+            audio_filename = audio_file.name
+
+            video_file.write(mp4_bytes)
+            video_file.close()
+            audio_file.close()  # TODO why we have to close and open audio file?
+
+            with open(video_filename, 'rb') as video_file:
+                with open(audio_filename, 'wb') as audio_file:
+                    audio_extract.extract_audio(input_path=video_filename,
+                                                output_path=audio_filename,
+                                                output_format='mp3', 
+                                                overwrite=True)
+
+            with open(audio_filename, 'rb') as audio_file:
+                mp3_bytes = audio_file.read()
+            
+    debug('finish')
+    return mp3_bytes

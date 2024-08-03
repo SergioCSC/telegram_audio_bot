@@ -68,16 +68,18 @@ def send_message(chat_id: int, message: str) -> None:
     debug('finish')
 
 
-def get_audio_url(message: dict) -> str:
-    voice_id = message.get('voice', message.get('audio'))['file_id']
-    debug(f'{voice_id = }')
+def get_media_url(message: dict) -> str:
+    media_id = message.get('voice', message.get('audio',
+            message.get('video', message.get('video_note', 
+            message.get('document')))))['file_id']
+    debug(f'{media_id = }')
     get_file_url = f'{TELEGRAM_BOT_API_PREFIX}' \
-            f'{cfg.TELEGRAM_BOT_TOKEN}/getfile?file_id={voice_id}'
+            f'{cfg.TELEGRAM_BOT_TOKEN}/getfile?file_id={media_id}'
     result = requests.get(get_file_url)
-    voice_path = result.json()['result']['file_path']
-    voice_url = f'https://api.telegram.org/file/bot' \
-            f'{cfg.TELEGRAM_BOT_TOKEN}/{voice_path}'
-    return voice_url
+    media_path = result.json()['result']['file_path']
+    media_url = f'https://api.telegram.org/file/bot' \
+            f'{cfg.TELEGRAM_BOT_TOKEN}/{media_path}'
+    return media_url
 
 
 def delete_webhook() -> None:

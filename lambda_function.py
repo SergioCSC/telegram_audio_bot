@@ -28,11 +28,15 @@ def lambda_handler(event: dict, context) -> dict:
     chat_id = int(update_message.get('chat', {}).get('id', 0))
     if not chat_id:
         return SUCCESSFULL_RESPONSE
-    tg.send_message(chat_id, f'Model: {cfg.HUGGING_FACE_MODEL}')
     
-    if 'voice' in update_message or 'audio' in update_message:
-        tg.send_message(chat_id, 'I am listening to you. Thinking ...')
+    if 'voice' in update_message \
+            or 'audio' in update_message \
+            or 'video' in update_message \
+            or 'video_note' in update_message \
+            or 'video' in update_message.get('document', {}).get('mime_type', ''):
+        
         result_text = _get_text(update_message)
+    
     elif 'text' in update_message:
         input_text = update_message.get('text')
         
@@ -92,6 +96,15 @@ def _correct_prompt(prompt: str) -> str:
         return corrected_prompt
     
     return prompt
+
+
+def _sizeof_fmt(num:int, suffix: str = "B") -> str:
+    for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):
+        if abs(num) < 1024.0:
+            rounded_down_num = num // 0.1 / 10
+            return f"{rounded_down_num:3.1f} {unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f} Y{suffix}"
     
 
 def _get_text(message: dict, chat_temp: float = 1) -> str:
@@ -100,14 +113,18 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
     model = cfg.HUGGING_FACE_MODEL
     chat_id = message.get('chat', {}).get('id', 0)
     
-    if message.get('audio') or message.get('voice'):
-        voice_url = tg.get_audio_url(message)
-        filename = message.get('audio', {}).get('file_name', '')
+    if message.get('audio') or message.get('voice') \
+            or message.get('video') or message.get('video_note') \
+            or 'video' in message.get('document', {}).get('mime_type', ''):
+        
+        media_url = tg.get_media_url(message)
+        filename = message.get('audio', message.get('document',{})).get('file_name', '')
         if filename:
-            prefix = f'Filename: {filename}'
+            prefix = f'Media: {filename}'
         else:
-            duration = message.get('audio', message.get('voice', {})) \
-                .get('duration', -1)
+            duration = message.get('audio', message.get('voice', \
+                    message.get('video', message.get('video_note',{})))) \
+                    .get('duration', -1)
             prefix = f'Duration: {duration} seconds'
 
         if message.get('voice'):
@@ -127,11 +144,26 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
             # output_text = openai_conn.audio2text(mp3_bytes_io, 'mp3')
             pass
         tg.send_message(chat_id, f'{prefix}\nModel: {model} \
-                        \n\nGetting audio from Telegram ...')
-        response = requests.get(voice_url)
+                        \n\nGetting media from Telegram ...')
+        response = requests.get(media_url)
+        if message.get('video') or message.get('video_note') \
+                or 'video' in message.get('document', {}).get('mime_type', ''):
+            video_ext = message.get('video', message.get('document', {})) \
+                    .get('mime_type', '')
+            if not video_ext:
+                if message.get('video_note'):
+                    video_ext = 'video/mp4'
+                else:
+                    debug(f'unknown {message = }')
+            video_ext = '.' + video_ext.split('/')[1]
+            audio_bytes = transcoder.extract_mp3_from_video(response.content, video_ext)
+        else:
+            audio_bytes = response.content
+        audio_size = _sizeof_fmt(len(audio_bytes))
         tg.send_message(chat_id, f'{prefix}\nModel: {model} \
-                        \n\nSending audio to Hugging face ...')
-        output_text, sleeping_time = hf.audio2text(model, response.content)
+                        \n\nSending audio ({audio_size}) to Hugging face ...'
+                       )
+        output_text, sleeping_time = hf.audio2text(model, audio_bytes)
 
         while 'Internal Server Error' in output_text \
                 or 'Service Unavailable' in output_text \
@@ -154,17 +186,17 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
                         )
                 model = hf.downgrade(model)
                 output_text, sleeping_time  \
-                        = hf.audio2text(model, response.content)
+                        = hf.audio2text(model, audio_bytes)
             
             elif 'is currently loading' in output_text:
                 output_text = f'{output_text}   \
-                        \n\nPlease wait for {sleeping_time} seconds ...'
+                        \n\nPlease wait {sleeping_time} seconds ...'
                 debug(output_text)
                 tg.send_message(chat_id, output_text)
                 time.sleep(sleeping_time)
                 tg.send_message(chat_id, 'Sending audio to Hugging face ...')
                 output_text, sleeping_time  \
-                        = hf.audio2text(model, response.content)
+                        = hf.audio2text(model, audio_bytes)
         
         output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
 
