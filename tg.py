@@ -89,7 +89,11 @@ def delete_webhook() -> None:
 
 
 def set_webhook() -> None:
+    allowed_updates = ['message', 'edited_message']
+    allowed_updates_jsons = json.dumps(allowed_updates)
     set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
         f'/setwebhook?url={cfg.AWS_LAMBDA_API_GATEWAY_URL}' \
-        f'&max_connections=2'
+        f'&max_connections=2' \
+        f'&allowed_updates={allowed_updates_jsons}' \
+
     requests.get(set_webhook_url)
