@@ -12,11 +12,11 @@ TELEGRAM_BOT_API_PREFIX = 'https://api.telegram.org/bot'
 
 
 def get_update_message(event: dict) -> dict:
-    if event.get('httpMethod') not in ('GET','POST'):  # event initiated by telegram
+    if http_method := event.get('httpMethod') not in ('GET','POST'):  # event initiated by telegram
         event_json = json.dumps(event)
         body_json = json.dumps(event.get('body'))
         logging.info(f'not GET or POST. Instead,  \
-                     \n\n{httpMethod = },         \
+                     \n\n{http_method = },         \
                      \n\n{event_json = },         \
                      \n\n{body_json = }.          \
                      \n\nFinish')
