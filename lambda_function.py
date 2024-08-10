@@ -19,7 +19,7 @@ SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
 def lambda_handler(event: dict, context) -> dict:
     _init_logging()
     debug('start')
-    update_message = tg.get_update_message(event)
+    update_message: dict = tg.get_update_message(event)
     
     debug(f'{update_message = }')
     if not update_message:
@@ -117,8 +117,8 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
             or message.get('video') or message.get('video_note') \
             or 'video' in message.get('document', {}).get('mime_type', ''):
         
-        media_url = tg.get_media_url(message)
-        filename = message.get('audio', message.get('document',{})).get('file_name', '')
+        filename = message.get('audio', message.get('document',{})) \
+                .get('file_name', '')
         if filename:
             prefix = f'Media: {filename}'
         else:
@@ -145,6 +145,9 @@ def _get_text(message: dict, chat_temp: float = 1) -> str:
             pass
         tg.send_message(chat_id, f'{prefix}\nModel: {model} \
                         \n\nGetting media from Telegram ...')
+        media_url = tg.get_media_url(message, chat_id)
+        if not media_url:
+            return ''
         response = requests.get(media_url)
         if message.get('video') or message.get('video_note') \
                 or 'video' in message.get('document', {}).get('mime_type', ''):
