@@ -97,6 +97,27 @@ def get_media_url(message: dict, chat_id_to_send_error: int) -> str:
     return media_url
 
 
+def get_bot_description(chat_id_to_send_error: int) -> str:
+    get_description_url: str = f'{TELEGRAM_BOT_API_PREFIX}' \
+            f'{cfg.TELEGRAM_BOT_TOKEN}/getMyDescription'
+    result = requests.get(get_description_url)
+    result_json = result.json()
+    description: str = str(result_json.get('result', {}).get('description', ''))
+    if result_json['ok'] is False \
+            or result.status_code != 200 \
+            or not description \
+            or 'bad request' in description.lower():
+
+        chat_id_to_send_error = cfg.TELEGRAM_BOT_CHAT_ID
+        error_message = f'{result.status_code = }' \
+                f'\n\n{result.text = }' \
+                f'\n\n{result_json = }'
+        info(error_message)
+        send_message(chat_id=chat_id_to_send_error, message=error_message)
+        return ''
+    return description
+
+
 def delete_webhook() -> None:
     delete_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
         '/deletewebhook'

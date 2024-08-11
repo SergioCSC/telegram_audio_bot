@@ -181,18 +181,7 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
 
     elif input_text := message.get('text'):
         if not input_text or input_text.lower() == '/start':
-            result_text = '''
-
-With me you can:
-
-  - Ask something from chatGPT: Just text me
-  - Transcribe an audio or a voice message: Send it to me
-  - Fix grammar in text in any language. Write "correct: my_text" or "правь: мой_текст"
-  - Translate text into English or Russian. Write: "translate: my_text"  or "переведи: мой текст"
-
-The bot doesn't collect any info. Author: @n_log_n
-
-                    '''
+            output_text = tg.get_bot_description(chat_id)
         else:
             tg.send_message(chat_id, 'I have to think about it. Just a moment ...')
             input_text = _correct_prompt(input_text)
