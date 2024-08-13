@@ -71,7 +71,21 @@ def _sizeof_fmt(num:int, suffix: str = "B") -> str:
             return f"{rounded_down_num:3.1f} {unit}{suffix}"
         num /= 1024.0
     return f"{num:.1f} Y{suffix}"
-    
+
+
+def _get_media_marker(message: dict) -> str:
+    if caption := message.get('caption'):
+        words = 5
+        caption = ' '.join(str(caption).split(maxsplit=words)[:words])
+        return f'Media caption: {caption}'
+    if filename := message.get('audio', message.get('document',{})) \
+        .get('file_name', ''):
+        return f'Media file name: {filename}'
+    duration = message.get('audio', message.get('voice', \
+            message.get('video', message.get('video_note',{})))) \
+            .get('duration', -1)
+    return f'Media duration: {duration} seconds'
+
 
 def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int]:
     debug('start')
@@ -89,16 +103,6 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
     if message.get('audio') or message.get('voice') \
             or message.get('video') or message.get('video_note') \
             or 'video' in message.get('document', {}).get('mime_type', ''):
-        
-        filename = message.get('audio', message.get('document',{})) \
-                .get('file_name', '')
-        if filename:
-            prefix = f'Media: {filename}'
-        else:
-            duration = message.get('audio', message.get('voice', \
-                    message.get('video', message.get('video_note',{})))) \
-                    .get('duration', -1)
-            prefix = f'Duration: {duration} seconds'
 
         if message.get('voice'):
             # send_text = 'Decoding OGG --> WAV ...'
@@ -118,6 +122,7 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
             pass
 
         model = cfg.HUGGING_FACE_MODEL
+        prefix = _get_media_marker(message)
 
         tg.send_message(chat_id, f'{prefix}\nModel: {model} \
                         \n\nGetting media from Telegram ...')
