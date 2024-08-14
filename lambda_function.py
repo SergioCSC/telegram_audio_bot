@@ -124,7 +124,7 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
         model = cfg.HUGGING_FACE_MODEL
         prefix = _get_media_marker(message)
 
-        tg.send_message(chat_id, f'{prefix}\nModel: {model} \
+        tg.send_message(chat_id, f'{prefix} \
                         \n\nGetting media from Telegram ...')
         media_url = tg.get_media_url(message, chat_id)
         if not media_url:
@@ -152,8 +152,8 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
         while 'Internal Server Error' in output_text \
                 or 'Service Unavailable' in output_text \
                 or 'is currently loading' in output_text:
-            
-            
+
+
             output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
             if 'Internal Server Error' in output_text \
                     or 'Service Unavailable' in output_text:
@@ -171,7 +171,7 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
                 model = hf.downgrade(model)
                 output_text, sleeping_time  \
                         = hf.audio2text(model, audio_bytes)
-            
+
             elif 'is currently loading' in output_text:
                 output_text = f'{output_text}   \
                         \n\nPlease wait {sleeping_time} seconds ...'
@@ -181,7 +181,7 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
                 tg.send_message(chat_id, 'Sending audio to Hugging face ...')
                 output_text, sleeping_time  \
                         = hf.audio2text(model, audio_bytes)
-        
+
         output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
 
     elif input_text := message.get('text'):
