@@ -10,7 +10,13 @@ HUGGING_FACE_MODEL_URL_PREFIX = 'https://api-inference.huggingface.co/models/'
 
 def _post(url: str, headers: dict, data: bytes) -> tuple[requests.Response, dict]:
     response = requests.post(url, headers=headers, data=data)
-    return response, response.json()
+    try:
+        response_json = response.json()
+    except requests.exceptions.JSONDecodeError as e:
+        response_json = {'error': str(response.text)}
+        info(f'Responce.text: {response.text} \
+             \n\nError decoding JSON: {e}')
+    return response, response_json
 
 
 def audio2text(model: str, audio: bytes) -> tuple[str, int]:
