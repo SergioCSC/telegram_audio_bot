@@ -68,7 +68,7 @@ def send_message(chat_id: int, message: str) -> None:
     debug('finish')
 
 
-def get_media_url(message: dict, chat_id_to_send_error: int) -> str:
+def get_media_url_and_size(message: dict, chat_id_to_send_error: int) -> tuple[str, int]:
     media_id = message.get('voice', message.get('audio',
             message.get('video', message.get('video_note', 
             message.get('document')))))['file_id']
@@ -89,12 +89,13 @@ def get_media_url(message: dict, chat_id_to_send_error: int) -> str:
                 f'\n\n{result_json = }'
         info(error_message)
         send_message(chat_id=chat_id_to_send_error, message=error_message)
-        return ''
+        return '', -1
 
     media_path = result_json['result']['file_path']
+    media_size = result_json['result']['file_size']
     media_url = f'https://api.telegram.org/file/bot' \
             f'{cfg.TELEGRAM_BOT_TOKEN}/{media_path}'
-    return media_url
+    return media_url, media_size
 
 
 def get_bot_description(chat_id_to_send_error: int) -> str:
