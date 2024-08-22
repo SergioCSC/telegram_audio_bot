@@ -245,5 +245,9 @@ def telegram_long_polling():
 
 if __name__ == '__main__':
     # tg.set_webhook()
-    telegram_long_polling()
+    try:
+        telegram_long_polling()
+    except KeyboardInterrupt as e:
+        tg.set_webhook()
+        raise e
     pass
