@@ -1,9 +1,11 @@
+import contextlib
 import config as cfg
 import tg
 import transcoder
 import openai_conn
 import hugging_face_conn as hf
 
+from gradio_client import Client, file
 import requests
 
 import io
@@ -31,7 +33,7 @@ def lambda_handler(event: dict, context) -> dict:
     return SUCCESSFULL_RESPONSE
 
 
-def startswith(s: str, templates: list[str]) -> str:
+def _startswith(s: str, templates: list[str]) -> str:
     s = s.lower()
     for t in templates:
         if s.startswith(t):
@@ -39,8 +41,8 @@ def startswith(s: str, templates: list[str]) -> str:
     return ''
 
 
-def correct_by_phrases(prompt: str, key_phrases: list[str], new_phrase: str) -> str:
-    if key_phrase := startswith(prompt, key_phrases):
+def _correct_by_phrases(prompt: str, key_phrases: list[str], new_phrase: str) -> str:
+    if key_phrase := _startswith(prompt, key_phrases):
         prompt = new_phrase + '\n\n' + prompt[len(key_phrase):]
         return prompt
     return ''
@@ -48,14 +50,14 @@ def correct_by_phrases(prompt: str, key_phrases: list[str], new_phrase: str) -> 
 
 def _correct_prompt(prompt: str) -> str:
     key_phrases = ['correct:', 'corect:', 'исправь:', 'поправь:', 'правь:']
-    if corrected_prompt := correct_by_phrases(prompt, 
+    if corrected_prompt := _correct_by_phrases(prompt, 
             key_phrases, 
             'Correct this text:'
             ):
         return corrected_prompt
     
     key_phrases = ['translate:', 'translation:', 'переведи:', 'перевод:']
-    if corrected_prompt := correct_by_phrases(prompt, 
+    if corrected_prompt := _correct_by_phrases(prompt, 
             key_phrases, 
             'Translate text from standard English to Russian or vice versa:'
             ):
@@ -73,6 +75,13 @@ def _sizeof_fmt(num:int, suffix: str = "B") -> str:
     return f"{num:.1f} Y{suffix}"
 
 
+def _get_media_duration(message: dict) -> int:
+    duration = message.get('audio', message.get('voice', \
+            message.get('video', message.get('video_note', {})))) \
+            .get('duration', -1)
+    return duration
+
+
 def _get_media_marker(message: dict) -> str:
     if caption := message.get('caption'):
         words = 5
@@ -81,10 +90,17 @@ def _get_media_marker(message: dict) -> str:
     if filename := message.get('audio', message.get('document',{})) \
         .get('file_name', ''):
         return f'Media file name: {filename}'
-    duration = message.get('audio', message.get('voice', \
-            message.get('video', message.get('video_note',{})))) \
-            .get('duration', -1)
+    duration = _get_media_duration(message)
     return f'Media duration: {duration} seconds'
+
+
+@contextlib.contextmanager
+def silence():
+    sys.stderr, old = io.StringIO(), sys.stderr
+    try:
+        yield
+    finally:
+        sys.stderr = old
 
 
 def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int]:
@@ -128,65 +144,100 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
 
         tg.send_message(chat_id, f'{prefix} \
                         \n\nGetting media from Telegram ...')
-        media_url = tg.get_media_url(message, chat_id)
+        media_url, media_size = tg.get_media_url_and_size(message, chat_id)
         if not media_url:
             return '', chat_id
-        response = requests.get(media_url)
-        if message.get('video') or message.get('video_note') \
-                or 'video' in message.get('document', {}).get('mime_type', ''):
-            video_ext = message.get('video', message.get('document', {})) \
-                    .get('mime_type', '')
-            if not video_ext:
-                if message.get('video_note'):
-                    video_ext = 'video/mp4'
-                else:
-                    debug(f'unknown {message = }')
-            video_ext = '.' + video_ext.split('/')[1]
-            audio_bytes = transcoder.extract_mp3_from_video(response.content, video_ext)
+        
+        if media_size > cfg.MAX_MEDIA_SIZE:
+            output_text = f'{prefix}\n\nToo big media file ({_sizeof_fmt(media_size)}).'
+        elif True: #_get_media_duration(message) > cfg.MEDIA_DURATION_TO_USE_SPACE:
+            with silence():
+                client = Client(cfg.HUGGING_FACE_SPACE, verbose=False)
+
+                # api_str = client.view_api()
+                # debug(f'{api_str = }')
+
+                # # create a text trap and redirect stdout
+                # text_trap = io.StringIO()
+                # sys.stdout = text_trap
+                # sys.stderr = text_trap
+
+                try:
+                    output_text = client.predict(
+                            # "https://raw.githubusercontent.com/gradio-app/gradio/main/test/test_files/audio_sample.wav",	# str (filepath or URL to file) in 'inputs' Audio component
+                            media_url,
+                            # inputs=file(media_url),
+                            "transcribe",	# str in 'Task' Radio component
+                            api_name="/predict",
+                    )
+                except ValueError as e:
+                    output_text = f'{type(e)} exception: {str(e)}' \
+                                f'\nException args: {e.args}'
+                finally:
+                    # now restore stdout function
+                    pass
+                    # sys.stdout = sys.__stdout__
+                    # sys.stderr = sys.__stderr__
+
+
         else:
-            audio_bytes = response.content
-        audio_size = _sizeof_fmt(len(audio_bytes))
-        tg.send_message(chat_id, f'{prefix}\nModel: {model} \
-                        \n\nSending audio ({audio_size}) to Hugging face ...'
-                       )
-        output_text, sleeping_time = hf.audio2text(model, audio_bytes)
+        
+            response = requests.get(media_url)
+            if message.get('video') or message.get('video_note') \
+                    or 'video' in message.get('document', {}).get('mime_type', ''):
+                video_ext = message.get('video', message.get('document', {})) \
+                        .get('mime_type', '')
+                if not video_ext:
+                    if message.get('video_note'):
+                        video_ext = 'video/mp4'
+                    else:
+                        debug(f'unknown {message = }')
+                video_ext = '.' + video_ext.split('/')[1]
+                audio_bytes = transcoder.extract_mp3_from_video(response.content, video_ext)
+            else:
+                audio_bytes = response.content
+            audio_size = _sizeof_fmt(len(audio_bytes))
+            tg.send_message(chat_id, f'{prefix}\nModel: {model} \
+                            \n\nSending audio ({audio_size}) to Hugging face ...'
+                           )
+            output_text, sleeping_time = hf.audio2text(model, audio_bytes)
 
-        while 'Internal Server Error' in output_text \
-                or 'Service Unavailable' in output_text \
-                or 'is currently loading' in output_text:
+            while 'Internal Server Error' in output_text \
+                    or 'Service Unavailable' in output_text \
+                    or 'is currently loading' in output_text:
 
 
-            output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
-            if 'Internal Server Error' in output_text \
-                    or 'Service Unavailable' in output_text:
-                if model == hf.downgrade(model):
+                output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
+                if 'Internal Server Error' in output_text \
+                        or 'Service Unavailable' in output_text:
+                    if model == hf.downgrade(model):
+                        tg.send_message(chat_id, 
+                                 f"Can't downgrade the smallest model.\n\nFinish"
+                                )
+                        break
+                    debug(output_text)
                     tg.send_message(chat_id, 
-                             f"Can't downgrade the smallest model.\n\nFinish"
+                            f'{output_text}                                             \
+                            \n\nDowngrade model to {hf.downgrade(model)} and repeat.    \
+                            \nSending audio to Hugging face ...'
                             )
-                    break
-                debug(output_text)
-                tg.send_message(chat_id, 
-                        f'{output_text}                                             \
-                        \n\nDowngrade model to {hf.downgrade(model)} and repeat.    \
-                        \nSending audio to Hugging face ...'
-                        )
-                model = hf.downgrade(model)
-                output_text, sleeping_time  \
-                        = hf.audio2text(model, audio_bytes)
+                    model = hf.downgrade(model)
+                    output_text, sleeping_time  \
+                            = hf.audio2text(model, audio_bytes)
 
-            elif 'is currently loading' in output_text:
-                output_text = f'{output_text}   \
-                        \n\nPlease wait {sleeping_time} seconds ...'
-                debug(output_text)
-                tg.send_message(chat_id, output_text)
-                time.sleep(sleeping_time)
-                tg.send_message(chat_id, 'Sending audio to Hugging face ...')
-                output_text, sleeping_time  \
-                        = hf.audio2text(model, audio_bytes)
+                elif 'is currently loading' in output_text:
+                    output_text = f'{output_text}   \
+                            \n\nPlease wait {sleeping_time} seconds ...'
+                    debug(output_text)
+                    tg.send_message(chat_id, output_text)
+                    time.sleep(sleeping_time)
+                    tg.send_message(chat_id, 'Sending audio to Hugging face ...')
+                    output_text, sleeping_time  \
+                            = hf.audio2text(model, audio_bytes)
 
         output_text = f'{prefix}\nModel: {model} \
-            \n\nText: {output_text} \
-            \n\nCalc time: {int(time.time() - start_time)} seconds'
+                \n\nText: {output_text} \
+                \n\nCalc time: {int(time.time() - start_time)} seconds'
 
     elif input_text := message.get('text'):
         if not input_text or input_text.lower() == '/start':
@@ -248,10 +299,14 @@ def telegram_long_polling():
 
 
 if __name__ == '__main__':
-    # tg.set_webhook()
-    try:
-        telegram_long_polling()
-    except KeyboardInterrupt as e:
-        tg.set_webhook()
-        raise e
-    pass
+    tg.set_webhook()
+
+    # sys.stdout = sys.__stdout__
+    # sys.stderr = sys.__stderr__
+    
+    # try:
+    #     telegram_long_polling()
+    # except KeyboardInterrupt as e:
+    #     tg.set_webhook()
+    #     raise e
+    # pass
