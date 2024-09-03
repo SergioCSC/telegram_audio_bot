@@ -88,6 +88,7 @@ def _get_media_marker(message: dict) -> str:
 
 
 def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int]:
+    start_time = time.time()
     debug('start')
     debug(f'{message = }')
     
@@ -182,7 +183,9 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
                 output_text, sleeping_time  \
                         = hf.audio2text(model, audio_bytes)
 
-        output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
+        output_text = f'{prefix}\nModel: {model} \
+            \n\nText: {output_text} \
+            \n\nCalc time: {int(time.time() - start_time)} seconds'
 
     elif input_text := message.get('text'):
         if not input_text or input_text.lower() == '/start':
