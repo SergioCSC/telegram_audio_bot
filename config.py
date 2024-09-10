@@ -13,6 +13,7 @@ HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE', 
                                  'https://openai-whisper.hf.space')
+                                 # 'https://sanchit-gandhi-whisper-jax-diarization.hf.space')
                               #  'https://huggingface.co/spaces/openai/whisper')
                               #  'abidlabs/whisper-large-v2')
                               #  'hf-audio/whisper-large-v3')

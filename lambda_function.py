@@ -151,33 +151,38 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
         if media_size > cfg.MAX_MEDIA_SIZE:
             output_text = f'{prefix}\n\nToo big media file ({_sizeof_fmt(media_size)}).'
         elif True: #_get_media_duration(message) > cfg.MEDIA_DURATION_TO_USE_SPACE:
-            with silence():
-                client = Client(cfg.HUGGING_FACE_SPACE, verbose=False)
 
-                # api_str = client.view_api()
-                # debug(f'{api_str = }')
+            # api_str = client.view_api()
+            # debug(f'{api_str = }')
 
-                # # create a text trap and redirect stdout
-                # text_trap = io.StringIO()
-                # sys.stdout = text_trap
-                # sys.stderr = text_trap
-
-                try:
-                    output_text = client.predict(
-                            # "https://raw.githubusercontent.com/gradio-app/gradio/main/test/test_files/audio_sample.wav",	# str (filepath or URL to file) in 'inputs' Audio component
-                            media_url,
-                            # inputs=file(media_url),
-                            "transcribe",	# str in 'Task' Radio component
-                            api_name="/predict",
-                    )
-                except ValueError as e:
-                    output_text = f'{type(e)} exception: {str(e)}' \
-                                f'\nException args: {e.args}'
-                finally:
-                    # now restore stdout function
-                    pass
-                    # sys.stdout = sys.__stdout__
-                    # sys.stderr = sys.__stderr__
+            try:
+                client = Client(cfg.HUGGING_FACE_SPACE)
+                _init_logging()
+                output_text = client.predict(
+                        # "https://github.com/gradio-app/gradio/raw/main/test/test_files/audio_sample.wav",	# str (filepath or URL to file) in 'audio_path' Audio component
+                        # 'https://raw.githubusercontent.com/gradio-app/gradio/main/test/test_files/audio_sample.wav',
+                        media_url,	# str (filepath or URL to file) in 'audio_path' Audio component
+                        "transcribe",	# str in 'Task' Radio component
+                        # True,	# bool in 'Group by speaker' Checkbox component
+                        api_name="/predict"
+                )
+                # output_text = client.predict(
+                #         "https://raw.githubusercontent.com/gradio-app/gradio/main/test/test_files/audio_sample.wav",	# str (filepath or URL to file) in 'inputs' Audio component
+                #         # 'https://youtu.be/b6_iqYF8W34?si=kj3TtMx9hp2CQGig',
+                #         # media_url,
+                #         # inputs=file(media_url),
+                #         "transcribe",	# str in 'Task' Radio component
+                #         True,	# bool in 'Group by speaker' Checkbox component
+                #         api_name="/predict",
+                # )
+            except ValueError as e:
+                output_text = f'{type(e)} exception: {str(e)}' \
+                            f'\nException args: {e.args}'
+            finally:
+                # now restore stdout function
+                pass
+                # sys.stdout = sys.__stdout__
+                # sys.stderr = sys.__stderr__
 
 
         else:
