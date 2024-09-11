@@ -103,7 +103,8 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
 
     if message.get('audio') or message.get('voice') \
             or message.get('video') or message.get('video_note') \
-            or 'video' in message.get('document', {}).get('mime_type', ''):
+            or 'video' in message.get('document', {}).get('mime_type', '') \
+            or 'audio' in message.get('document', {}).get('mime_type', ''):
 
         if message.get('voice'):
             # send_text = 'Decoding OGG --> WAV ...'
