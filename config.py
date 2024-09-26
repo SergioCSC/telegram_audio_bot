@@ -16,6 +16,7 @@ HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
                                  # 'https://sanchit-gandhi-whisper-jax-diarization.hf.space')
                               #  'https://huggingface.co/spaces/openai/whisper')
                               #  'abidlabs/whisper-large-v2')
+                              # 'https://abidlabs-whisper-large-v2.hf.space/')
                               #  'hf-audio/whisper-large-v3')
 
 
@@ -26,4 +27,4 @@ AWS_LAMBDA_API_GATEWAY_URL = environ.get('AWS_LAMBDA_API_GATEWAY_URL')
 
 LOG_LEVEL = environ.get('LOG_LEVEL', 'INFO')
 
-MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 15)) * 1024 * 1024  # 15 MB
+MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 20)) * 1024 * 1024  # 20 MB

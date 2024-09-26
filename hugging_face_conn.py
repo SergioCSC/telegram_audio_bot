@@ -1,6 +1,6 @@
 import config as cfg
 
-from logging import info, debug
+from logging import error, warning, info, debug
 import io
 import requests
 
@@ -14,7 +14,7 @@ def _post(url: str, headers: dict, data: bytes) -> tuple[requests.Response, dict
         response_json = response.json()
     except requests.exceptions.JSONDecodeError as e:
         response_json = {'error': str(response.text)}
-        info(f'Responce.text: {response.text} \
+        error(f'Responce.text: {response.text} \
              \n\nError decoding JSON: {e}')
     return response, response_json
 
@@ -36,6 +36,10 @@ def audio2text(model: str, audio: bytes) -> tuple[str, int]:
     elif response.status_code == 500 \
             and 'Internal Server Error' in error:
         return error, -1
+    elif response.status_code == 413 \
+            and 'payload reached size limit' in error:
+        return error, -1
+
     # data = {'model': 'whisper-1', 'language': 'ru'}  # TODO get language from Telegram update language_code
     elif response.status_code == 200:
         if not text:

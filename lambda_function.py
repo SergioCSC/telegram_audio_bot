@@ -12,7 +12,7 @@ import io
 import sys
 import time
 import logging
-from logging import info, debug
+from logging import error, warning, info, debug
 
 
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
@@ -21,7 +21,7 @@ EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
 
 def lambda_handler(event: dict, context) -> dict:
     _init_logging()
-    debug('start')
+    warning('start')
     update_message: dict = tg.get_update_message(event)
 
     result_text, chat_id = _get_text_and_chat_id(update_message)
@@ -29,7 +29,7 @@ def lambda_handler(event: dict, context) -> dict:
     if chat_id != -1:
         tg.send_message(chat_id, result_text)
 
-    debug('finish')
+    warning('finish')
     return SUCCESSFULL_RESPONSE
 
 
@@ -254,13 +254,13 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
 
     else:
         error_message = f"Can't parse this type of Telegram message: {message}"
-        info(error_message)
+        error(error_message)
         output_text = "It seems I can't do what you want. \
                 I can answer to text and transcribe audio into text."
         output_text += '\n\n' + error_message        
 
     debug(f'{output_text = }')
-    debug('finish')
+    warning('finish')
     return output_text, chat_id
 
 
@@ -279,8 +279,8 @@ def _init_logging() -> None:
 
 def telegram_long_polling():
     _init_logging()
-    logging.getLogger().setLevel(logging.DEBUG)  # for local run
-    debug('start')
+    logging.getLogger().setLevel(cfg.LOG_LEVEL)  # for local run
+    warning('start')
     tg.delete_webhook()
     time.sleep(1)
     
@@ -300,7 +300,7 @@ def telegram_long_polling():
                 if chat_id != -1:
                     tg.send_message(chat_id, result_text)
         end_time = time.time()
-        debug(f'time between requests to Telegram Bot API: {end_time - start_time}')
+        warning(f'time between requests to Telegram Bot API: {end_time - start_time}')
 
 
 if __name__ == '__main__':
