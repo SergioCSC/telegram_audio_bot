@@ -1,7 +1,6 @@
 import config as cfg
 
 from logging import error, warning, info, debug
-import io
 import requests
 
 

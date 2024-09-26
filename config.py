@@ -25,6 +25,6 @@ IN_AWS_LAMBDA = 'AWS_LAMBDA_RUNTIME_API' in environ
 # if you want to set webhook
 AWS_LAMBDA_API_GATEWAY_URL = environ.get('AWS_LAMBDA_API_GATEWAY_URL')
 
-LOG_LEVEL = environ.get('LOG_LEVEL', 'INFO')
+LOG_LEVEL = environ.get('LOG_LEVEL', 'WARNING')
 
 MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 20)) * 1024 * 1024  # 20 MB
