@@ -11,7 +11,9 @@ HUGGING_FACE_API_KEY = environ['HUGGING_FACE_API_KEY']
 HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
                                  'openai/whisper-large-v3')
 
-HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE', 
+HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
+                                 # 'nlogn/openai-whisper-small')
+                                 # 'nlogn/openai-whisper-large-v3')
                                  'https://openai-whisper.hf.space')
                                  # 'https://sanchit-gandhi-whisper-jax-diarization.hf.space')
                               #  'https://huggingface.co/spaces/openai/whisper')

@@ -6,7 +6,7 @@ import transcoder
 import openai_conn
 import hugging_face_conn as hf
 
-from gradio_client import Client, file
+from gradio_client import Client  #, handle_file
 from gradio_client.utils import Status
 import requests
 
@@ -143,6 +143,7 @@ def _audio2text_using_hf_space(audio_bytes: bytes,
                 job = client.submit(
                     # 'https://raw.githubusercontent.com/gradio-app/gradio/main/test/test_files/audio_sample.wav',
                     # media_url,	# str (filepath or URL to file) in 'audio_path' Audio component
+                    # param_0=handle_file(audio_file.name),
                     audio_file.name,
                     "transcribe",	# str in 'Task' Radio component
                     # True,	# bool in 'Group by speaker' Checkbox component
