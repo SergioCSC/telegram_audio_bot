@@ -165,7 +165,7 @@ def _audio2text_using_hf_space(audio_bytes: bytes,
                 if job.status().success:
                     output_text = job.result() 
                 else:
-                    output_text = f'{tg_message_prefix}\n\n{job.status().code = }\n\n{job.communicator.reset_url = }\n\n{job.communicator.job.outputs = }\n\n{job.exception() = }\n\nFailed'
+                    output_text = f'{tg_message_prefix}\n\n{job.status().code = }\n\n{job.exception() = }\n\nFailed'
                 client.close()
 
     except ValueError as e:
