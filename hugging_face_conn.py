@@ -54,7 +54,8 @@ def audio2text(model: str, audio: bytes) -> tuple[str, int]:
 
 def downgrade(model: str) -> str:
     match model:
-        case 'openai/whisper-large-v3':
+        # case 'openai/whisper-large-v3':
+        case cfg.HUGGING_FACE_MODEL:
             return 'openai/whisper-medium'
         case 'openai/whisper-medium':
             return 'openai/whisper-small'
