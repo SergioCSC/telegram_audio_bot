@@ -7,9 +7,12 @@ IN_LINUX = sys.platform == 'linux'
 OPEN_AI_API_KEY = environ.get('OPEN_AI_API_KEY')
 TELEGRAM_BOT_TOKEN = environ['TELEGRAM_BOT_TOKEN']
 HUGGING_FACE_API_KEY = environ['HUGGING_FACE_API_KEY']
+DEEPGRAM_API_KEY = environ.get('DEEPGRAM_API_KEY')
 
 HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
                                  'openai/whisper-large-v3')
+
+DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
                                  # 'nlogn/openai-whisper-small')

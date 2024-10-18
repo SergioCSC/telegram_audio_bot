@@ -10,6 +10,13 @@ from gradio_client import Client  #, handle_file
 from gradio_client.utils import Status
 import requests
 
+# from dotenv import load_dotenv
+from deepgram import (
+    DeepgramClient,
+    PrerecordedOptions,
+    FileSource,
+)
+
 import io
 import sys
 import time
@@ -207,7 +214,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     warning('start')
     debug(f'{message = }')
     
-    model = cfg.HUGGING_FACE_MODEL
+    model = cfg.DEEPGRAM_MODEL
     prefix = _get_media_marker(message)
 
     tg.send_message(chat_id, f'{prefix} \
@@ -224,70 +231,95 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     else:
         audio_bytes, audio_ext = _get_audio_bytes(media_url=media_url, message=message)
         audio_size = _sizeof_fmt(len(audio_bytes))
-        tg.send_message(chat_id, f'{prefix}\nModel: {model} \
-                        \n\nSending an audio ({audio_size}) to Hugging face ...'
+        tg.send_message(chat_id, f'{prefix}\nDeepgram model: {model} \
+                        \n\nSending an audio ({audio_size}) to Deepgram ...'
                         )
         
-        output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
-        # output_text = 'Internal Server Error'
+        deepgram = DeepgramClient(cfg.DEEPGRAM_API_KEY)
+        payload: FileSource = {
+            "buffer": audio_bytes,
+        }
+        options = PrerecordedOptions(
+            # model="nova-2",
+            model=model,
+            detect_language=True,
+            smart_format=True,
+        )
+        try:
+            # raise Exception('Deepgram is not available')
+            response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
+            output_text = response["results"]["channels"][0]["alternatives"][0]["transcript"]
 
-        if 'Internal Server Error' in output_text \
-                or 'Service Unavailable' in output_text \
-                or 'the token seems invalid' in output_text \
-                or 'payload reached size limit' in output_text \
-                or 'Сообщение об ошибке от Hugging Face' in output_text:
+        except Exception as e:
 
-            output_text = f'{prefix}\nModel: {model} \
-                            \n\nText: Error: {output_text} \
-                            \n\nTrying to use hugging face space ({cfg.HUGGING_FACE_SPACE}) ...'
-            warning(output_text)
-            tg.send_message(chat_id, output_text)
+            output_text = f'Deepgram model {model} failed. Exception: {str(e)}'
+            output_text = f'{prefix}\n\nText: {output_text}'
             
-            output_text = _audio2text_using_hf_space(audio_bytes=audio_bytes,
-                                                     audio_ext=audio_ext,
-                                                     chat_id=chat_id,
-                                                     tg_message_prefix=prefix)
+            model = cfg.HUGGING_FACE_MODEL
 
-            if not 'Internal Server Error' in output_text \
-                    and not 'Service Unavailable' in output_text \
-                    and not 'the token seems invalid' in output_text \
-                    and not 'payload reached size limit' in output_text \
-                    and not 'Сообщение об ошибке от Hugging Face' in output_text \
-                    and not 'Failed' in output_text:
+            tg.send_message(chat_id, 
+                            f'{output_text}                                             \
+                            \n\nSending an audio to Hugging face model {model} and repeat ...'
+                            )
 
-                output_text = f'{prefix}\nSpace: {cfg.HUGGING_FACE_SPACE} \
-                                \n\nText: {output_text} \
-                                \n\nCalc time: {int(time.time() - start_time)} seconds'
-                return output_text
-      
-            while 'Internal Server Error' in output_text \
+            output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
+            # output_text = 'Internal Server Error'
+
+            if 'Internal Server Error' in output_text \
                     or 'Service Unavailable' in output_text \
                     or 'the token seems invalid' in output_text \
                     or 'payload reached size limit' in output_text \
-                    or 'Сообщение об ошибке от Hugging Face' in output_text \
-                    or 'Failed' in output_text:
-                        
-                if model == hf.downgrade(model):
-                    message = f"Can't downgrade the smallest model.\n\nFinish"
-                    warning(message)
-                    tg.send_message(chat_id, message=message)
-                    
-                    output_text = f'{prefix}\nModel: {model} \
-                            \n\nText: {output_text} \
-                            \n\nCalc time: {int(time.time() - start_time)} seconds'
-                    return output_text
-                
-                warning(output_text)
-                tg.send_message(chat_id, 
-                        f'{output_text}                                             \
-                        \n\nDowngrade model to {hf.downgrade(model)} and repeat.    \
-                        \nSending an audio to Hugging face ...'
-                        )
+                    or 'Сообщение об ошибке от Hugging Face' in output_text:
 
-                # output_text = f'{prefix}\nModel: {model}\n\nText: {output_text}'
+                output_text = f'{prefix}\nHugging face model: {model} \
+                                \n\nText: Error: {output_text} \
+                                \n\nTrying to use hugging face space ({cfg.HUGGING_FACE_SPACE}) ...'
+                warning(output_text)
+                tg.send_message(chat_id, output_text)
+                
+                output_text = _audio2text_using_hf_space(audio_bytes=audio_bytes,
+                                                         audio_ext=audio_ext,
+                                                         chat_id=chat_id,
+                                                         tg_message_prefix=prefix)
+
+                if not 'Internal Server Error' in output_text \
+                        and not 'Service Unavailable' in output_text \
+                        and not 'the token seems invalid' in output_text \
+                        and not 'payload reached size limit' in output_text \
+                        and not 'Сообщение об ошибке от Hugging Face' in output_text \
+                        and not 'Failed' in output_text:
+
+                    output_text = f'{prefix}\nSpace: {cfg.HUGGING_FACE_SPACE} \
+                                    \n\nText: {output_text} \
+                                    \n\nCalc time: {int(time.time() - start_time)} seconds'
+                    return output_text
+        
+                while 'Internal Server Error' in output_text \
+                        or 'Service Unavailable' in output_text \
+                        or 'the token seems invalid' in output_text \
+                        or 'payload reached size limit' in output_text \
+                        or 'Сообщение об ошибке от Hugging Face' in output_text \
+                        or 'Failed' in output_text:
+                            
+                    if model == hf.downgrade(model):
+                        message = f"Can't downgrade the smallest model.\n\nFinish"
+                        warning(message)
+                        tg.send_message(chat_id, message=message)
                         
-                model = hf.downgrade(model)
-                output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
+                        output_text = f'{prefix}\nHugging face model: {model} \
+                                \n\nText: {output_text} \
+                                \n\nCalc time: {int(time.time() - start_time)} seconds'
+                        return output_text
+                    
+                    warning(output_text)
+                    tg.send_message(chat_id, 
+                            f'{output_text}                                             \
+                            \n\nDowngrade Hugging face model to {hf.downgrade(model)} and repeat.    \
+                            \nSending an audio to Hugging face ...'
+                            )
+
+                    model = hf.downgrade(model)
+                    output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
 
 
     output_text = f'{prefix}\nModel: {model} \
