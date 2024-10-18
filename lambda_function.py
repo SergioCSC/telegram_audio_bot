@@ -340,6 +340,12 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
         error(f'EMPTY_RESPONSE_STR\n\n{chat_id = }\n\n{message = }')
         return EMPTY_RESPONSE_STR, -1
 
+    tg_chat_username = message.get('chat', {}).get('username', None)
+    if tg_chat_username not in cfg.PERMITTED_TG_CHAT_USERNAMES:
+        error_message = f'WRONG_TG_CHAT_USERNAME:\n\n{chat_id = }\n\n{tg_chat_username = }\n\n{message = }'
+        error(error_message)
+        return error_message, chat_id
+
     if message.get('audio') or message.get('voice') \
             or message.get('video') or message.get('video_note') \
             or 'video' in message.get('document', {}).get('mime_type', '') \
