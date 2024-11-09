@@ -1,5 +1,4 @@
-import contextlib
-import tempfile
+
 import config as cfg
 import tg
 import transcoder
@@ -8,18 +7,22 @@ import hugging_face_conn as hf
 
 from gradio_client import Client  #, handle_file
 from gradio_client.utils import Status
-import requests
 
 # from dotenv import load_dotenv
 from deepgram import (
     DeepgramClient,
     PrerecordedOptions,
     FileSource,
+    DeepgramError,
 )
 
 import io
 import sys
 import time
+import httpx
+import tempfile
+import requests
+import contextlib
 import logging
 from logging import error, warning, info, debug
 
@@ -245,11 +248,16 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
             detect_language=True,
             smart_format=True,
         )
+        myTimeout = httpx.Timeout(None, connect=20.0)
         try:
             # raise Exception('Deepgram is not available')
-            response = deepgram.listen.rest.v("1").transcribe_file(payload, options)
-            output_text = response["results"]["channels"][0]["alternatives"][0]["transcript"]
-
+            response = deepgram.listen.rest.v("1").transcribe_file(
+                    payload, options, timeout=myTimeout)
+            alternatives = response["results"]["channels"][0]["alternatives"]
+            if alternatives:
+                output_text = alternatives[0]["transcript"]
+            else:
+                raise DeepgramError("empty answer from Deepgram")
         except Exception as e:
 
             output_text = f'Deepgram model {model} failed. Exception: {str(e)}'
