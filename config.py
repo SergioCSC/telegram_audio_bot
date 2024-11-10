@@ -35,3 +35,4 @@ LOG_LEVEL = environ.get('LOG_LEVEL', 'WARNING')
 MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 20)) * 1024 * 1024  # 20 MB
 
 PERMITTED_TG_CHAT_USERNAMES = environ.get('PERMITTED_TG_CHAT_USERNAMES', '').split(',')
+PERMITTED_TG_CHAT_USERNAMES = [username.strip() for username in PERMITTED_TG_CHAT_USERNAMES if username.strip()]
