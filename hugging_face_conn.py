@@ -52,8 +52,8 @@ def audio2text(model: str, audio: bytes) -> tuple[str, int]:
     return text, -1
 
 
-def downgrade(model: str) -> str:
-    match model:
+def downgrade(model_name: str) -> str:
+    match model_name:
         # case 'openai/whisper-large-v3':
         case cfg.HUGGING_FACE_MODEL:
             return 'openai/whisper-medium'
@@ -66,6 +66,6 @@ def downgrade(model: str) -> str:
         case 'openai/whisper-tiny':
             return 'openai/whisper-tiny'
         case _:
-            return model
+            return model_name
 
 # output = query("sample1.flac")

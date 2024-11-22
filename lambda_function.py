@@ -25,10 +25,14 @@ import requests
 import contextlib
 import logging
 from logging import error, warning, info, debug
+from collections import namedtuple
 
 
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
 EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
+
+
+Model = namedtuple('Model', ['site', 'name'])
 
 
 def lambda_handler(event: dict, context) -> dict:
@@ -217,7 +221,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     warning('start')
     debug(f'{message = }')
     
-    model = cfg.DEEPGRAM_MODEL
+    model = Model('Deepgram', cfg.DEEPGRAM_MODEL)
     prefix = _get_media_marker(message)
 
     tg.send_message(chat_id, f'{prefix} \
@@ -234,7 +238,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     else:
         audio_bytes, audio_ext = _get_audio_bytes(media_url=media_url, message=message)
         audio_size = _sizeof_fmt(len(audio_bytes))
-        tg.send_message(chat_id, f'{prefix}\nDeepgram model: {model} \
+        tg.send_message(chat_id, f'{prefix}\nmodel: {model} \
                         \n\nSending an audio ({audio_size}) to Deepgram ...'
                         )
         
@@ -244,7 +248,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
         }
         options = PrerecordedOptions(
             # model="nova-2",
-            model=model,
+            model=model.name,
             detect_language=True,
             smart_format=True,
         )
@@ -260,17 +264,17 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
                 raise DeepgramError("empty answer from Deepgram")
         except Exception as e:
 
-            output_text = f'Deepgram model {model} failed. Exception: {str(e)}'
+            output_text = f'model {model} failed. Exception: {str(e)}'
             output_text = f'{prefix}\n\nText: {output_text}'
             
-            model = cfg.HUGGING_FACE_MODEL
+            model = Model('Hugging_face', cfg.HUGGING_FACE_MODEL)
 
             tg.send_message(chat_id, 
                             f'{output_text}                                             \
-                            \n\nSending an audio to Hugging face model {model} and repeat ...'
+                            \n\nSending an audio to model {model} and repeat ...'
                             )
 
-            output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
+            output_text = _audio2text_using_hf_model(model=model.name, audio_bytes=audio_bytes, chat_id=chat_id)
             # output_text = 'Internal Server Error'
 
             if 'Internal Server Error' in output_text \
@@ -279,7 +283,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
                     or 'payload reached size limit' in output_text \
                     or 'Сообщение об ошибке от Hugging Face' in output_text:
 
-                output_text = f'{prefix}\nHugging face model: {model} \
+                output_text = f'{prefix}\nmodel: {model} \
                                 \n\nText: Error: {output_text} \
                                 \n\nTrying to use hugging face space ({cfg.HUGGING_FACE_SPACE}) ...'
                 warning(output_text)
@@ -309,7 +313,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
                         or 'Сообщение об ошибке от Hugging Face' in output_text \
                         or 'Failed' in output_text:
                             
-                    if model == hf.downgrade(model):
+                    if model.name == hf.downgrade(model.name):
                         message = f"Can't downgrade the smallest model.\n\nFinish"
                         warning(message)
                         tg.send_message(chat_id, message=message)
@@ -326,7 +330,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
                             \nSending an audio to Hugging face ...'
                             )
 
-                    model = hf.downgrade(model)
+                    model = Model(model.site, hf.downgrade(model.name))
                     output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
 
 
@@ -420,15 +424,19 @@ def telegram_long_polling():
         warning(f'time between requests to Telegram Bot API: {end_time - start_time}')
 
 
-if __name__ == '__main__':
-    tg.set_webhook()
-
-    # sys.stdout = sys.__stdout__
-    # sys.stderr = sys.__stderr__
+def main():
+    # # sys.stdout = sys.__stdout__
+    # # sys.stderr = sys.__stderr__
     
-    # try:
-    #     telegram_long_polling()
-    # except KeyboardInterrupt as e:
-    #     tg.set_webhook()
-    #     raise e
-    # pass
+    try:
+        telegram_long_polling()
+    except KeyboardInterrupt as e:
+        tg.set_webhook()
+        raise e
+    pass
+
+
+if __name__ == '__main__':
+    # tg.set_webhook()
+    main()
+    
