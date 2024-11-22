@@ -12,6 +12,13 @@ DEEPGRAM_API_KEY = environ.get('DEEPGRAM_API_KEY')
 HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
                                  'openai/whisper-large-v3')
 
+# HUGGING_FACE_TEXT_MODEL = environ.get('HUGGING_FACE_TEXT_MODEL',
+#                                       'facebook/bart-large-cnn'
+#                                     #  'mistralai/Mistral-7B-Instruct-v0.2') -- didn't try
+#                                     # 'meta-llama/Llama-3.2-3B'
+#                                     #  'meta-llama/Llama-3.1-8B' -- too big (16gb > 10gb)
+#                            )
+
 DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
@@ -33,6 +40,7 @@ AWS_LAMBDA_API_GATEWAY_URL = environ.get('AWS_LAMBDA_API_GATEWAY_URL')
 LOG_LEVEL = environ.get('LOG_LEVEL', 'WARNING')
 
 MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 20)) * 1024 * 1024  # 20 MB
+MEDIA_LENGTH_TO_SUMMARIZE = int(environ.get('MEDIA_LENGTH_TO_SUMMARIZE', 30))  # seconds
 
 PERMITTED_TG_CHAT_USERNAMES = environ.get('PERMITTED_TG_CHAT_USERNAMES', '').split(',')
 PERMITTED_TG_CHAT_USERNAMES = [username.strip() for username in PERMITTED_TG_CHAT_USERNAMES if username.strip()]

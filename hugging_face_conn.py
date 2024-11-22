@@ -1,7 +1,10 @@
 import config as cfg
 
+# from huggingface_hub import InferenceClient
+
 from logging import error, warning, info, debug
 import requests
+# import json
 
 
 HUGGING_FACE_MODEL_URL_PREFIX = 'https://api-inference.huggingface.co/models/'
@@ -16,6 +19,20 @@ def _post(url: str, headers: dict, data: bytes) -> tuple[requests.Response, dict
         error(f'Responce.text: {response.text} \
              \n\nError decoding JSON: {e}')
     return response, response_json
+
+
+# def summarize(model: str, text: str) -> str:
+#     debug('start')
+
+#     client = InferenceClient(api_key=cfg.HUGGING_FACE_API_KEY)
+#     completion = client.summarization(model=model, 
+#                                       text=text,
+#                                       parameters={'max_length': 75}
+#                                       )
+#     summary = completion.get('summary_text', '')
+
+#     debug('finish')
+#     return summary
 
 
 def audio2text(model: str, audio: bytes) -> tuple[str, int]:

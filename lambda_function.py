@@ -1,5 +1,6 @@
 
 import config as cfg
+import gemini_conn
 import tg
 import transcoder
 import openai_conn
@@ -251,6 +252,14 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
             model=model.name,
             detect_language=True,
             smart_format=True,
+            # summarize=True,
+            # topics=True,
+            # paragraphs=True,
+            # punctuate=True,
+            # utterances=True,
+            # utt_split=0.8,
+            # detect_entities=True,
+            # intents=True,
         )
         myTimeout = httpx.Timeout(None, connect=20.0)
         try:
@@ -341,6 +350,23 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     return output_text
 
 
+def _summarize(text: str, message: dict, chat_id: int) -> str:
+    warning('start')
+    debug(f'{text = }')
+    prefix = _get_media_marker(message)
+    summarization_model = cfg.GEMINI_MODEL
+    chat_message = f'{prefix}\n\nSending the text to {summarization_model} for summarization ...'
+    tg.send_message(chat_id, chat_message)
+    # output_text = hf.summarize(cfg.HUGGING_FACE_TEXT_MODEL,
+    #                            text=text)  #, chat_temp=0)
+    output_text = gemini_conn.summarize(summarization_model, 
+                                        text=text, 
+                                        summary_word_count=1000)
+    debug(f'{output_text = }')
+    warning('finish')
+    return output_text
+
+
 def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int]:
     
     if not message:
@@ -363,7 +389,14 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
             or 'video' in message.get('document', {}).get('mime_type', '') \
             or 'audio' in message.get('document', {}).get('mime_type', ''):
 
-        output_text = _get_text_from_media(message=message, chat_id=chat_id)
+        # output_text = _get_text_from_media(message=message, chat_id=chat_id)
+        # media_length = _get_media_duration(message)
+        output_text = '''Добрый день, я Вам голосовое запишу. Смотрите, я посмотрела, что у Вас на сайте Fishare нет вида ID, то есть есть российский айди и вот российский рейтинг, а международного нет. Если вы захотите участвовать в любом рейтинговом турнире здесь, то вам нужно будет получить вот этот фида айди. Есть несколько способов. Бесплатным способом это делается так: пишется письмо в Федерацию шахмат России, прикрепляются там документы определенные, копия паспорта, я могу вам список выслать, регион и прочее, прочее, им фамилию и вы ждете, когда они вам пришлют вот этот вот код. Обычно это занимает неделю-полторы. Потом они, когда вам пришлют фотографию еще 3 на 4, по-моему там нужно. Когда они вам пришлют вот этот код фида, то вы будете в базе фида, и у Вас появится профиль. Но Вы там будете под российским флагом. Дальше Вам нужно будет написать письмо в Feeda и попросить их поменять российский флаг на флаг Feeda на нейтральный флаг. И это делается очень быстро. Там тоже образец письма я могу вам прислать и почту, куда надо это письмо писать. Они это все в течение дня вам меняют. И дальше вы уже, соответственно, сможете играть в любом рейтинговом турнире, который здесь будет проводиться. Без FIDID вас туда никуда не допустят. То есть смотрите, с учетом того, что ближайший рейтинговый турнир будет 2019, а может быть и 13, который проводит федерация. Я бы вам советовала сейчас написать, если вы будете писать, если будете получать вот этот фид ID, то я вам пришлю сейчас почту и детали подробные, что там нужно сразу указать, прикрепить, какие данные. Пишите письмо. Будем надеяться, что они вам ответят быстрее, чем турнир рейтинговый пройдет. Ну и тогда уже потом вы сможете играть в рейтинговых турнирах. Дальше в субботу, если вы играете в этом детском турнире безрейтинговом, проходите отбор, но вам не успеют присылать вот этот фид айди дорейтингового турнира, вы просто сохраните право участвовать в следующем рейтинговом турнире, который будет, условно, через месяц или еще когда-то. Я сейчас не знаю точно, ребята. Это если Вы в тройку попадете. Если нет, тогда, значит, Вы отбор не прошли. Тогда уже следующий отбор и так далее. Как-то так!'''
+        # output_text = '''Automatic summarization is the process of shortening a set of data computationally, to create a subset (a summary) that represents the most important or relevant information within the original content. Artificial intelligence algorithms are commonly developed and employed to achieve this, specialized for different types of data. Text summarization is usually implemented by natural language processing methods, designed to locate the most informative sentences in a given document.[1] On the other hand, visual content can be summarized using computer vision algorithms. Image summarization is the subject of ongoing research; existing approaches typically attempt to display the most representative images from a given image collection, or generate a video that only includes the most important content from the entire collection.[2][3][4] Video summarization algorithms identify and extract from the original video content the most important frames (key-frames), and/or the most important video segments (key-shots), normally in a temporally ordered fashion.[5][6][7][8] Video summaries simply retain a carefully selected subset of the original video frames and, therefore, are not identical to the output of video synopsis algorithms, where new video frames are being synthesized based on the original video content.'''
+        # output_text = '''Hey, guys, do you remember that tomorrow we are planning to get together at 5 o'clock. But you probably don't realize that tomorrow our speaking club turns one year old, exactly a year ago, Irina and I decided that it will be very boring in Kobuleti if in the evenings in the cold November weather we do not have the opportunity to walk along the embankment and practice English. And it's really cool that we've been together for a whole year and don't plan to split up. Not every community has overcome this line. So I congratulate everyone on our holiday.'''
+        media_length = 100500
+        if media_length > cfg.MEDIA_LENGTH_TO_SUMMARIZE:
+            output_text = _summarize(output_text, message, chat_id)
 
     elif input_text := message.get('text'):
         if not input_text or input_text.lower() == '/start':
