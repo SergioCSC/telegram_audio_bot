@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7-labs 
+
 ARG RUNTIME_VERSION="3.12.4"
 ARG DISTRO_VERSION="bookworm"
 ARG FUNCTION_DIR="/function"
@@ -11,7 +13,8 @@ RUN apt update && apt install -y libstdc++6 build-essential libtool autoconf cma
 
 COPY deploy/requirements.txt .
 RUN python -m pip install --target ${FUNCTION_DIR} awslambdaric
-RUN python -m pip install --target ${FUNCTION_DIR} -r requirements.txt
+RUN python -m pip install --target ${FUNCTION_DIR} -r requirements.txt \
+    && rm -f ${FUNCTION_DIR}/googleapiclient/discovery_cache/documents/*.json
 
 FROM python:${RUNTIME_VERSION}-slim-${DISTRO_VERSION}
 

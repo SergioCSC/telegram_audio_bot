@@ -8,6 +8,7 @@ OPEN_AI_API_KEY = environ.get('OPEN_AI_API_KEY')
 TELEGRAM_BOT_TOKEN = environ['TELEGRAM_BOT_TOKEN']
 HUGGING_FACE_API_KEY = environ['HUGGING_FACE_API_KEY']
 DEEPGRAM_API_KEY = environ.get('DEEPGRAM_API_KEY')
+GEMINI_API_KEY = environ.get('GEMINI_API_KEY')
 
 HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
                                  'openai/whisper-large-v3')
@@ -20,6 +21,8 @@ HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
 #                            )
 
 DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
+
+GEMINI_MODEL = environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
                                  # 'nlogn/openai-whisper-small')
@@ -40,7 +43,7 @@ AWS_LAMBDA_API_GATEWAY_URL = environ.get('AWS_LAMBDA_API_GATEWAY_URL')
 LOG_LEVEL = environ.get('LOG_LEVEL', 'WARNING')
 
 MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 20)) * 1024 * 1024  # 20 MB
-MEDIA_LENGTH_TO_SUMMARIZE = int(environ.get('MEDIA_LENGTH_TO_SUMMARIZE', 30))  # seconds
+TEXT_LENGTH_IN_WORDS_TO_SUMMARIZE = int(environ.get('TEXT_LENGTH_IN_WORDS_TO_SUMMARIZE', 1000))
 
 PERMITTED_TG_CHAT_USERNAMES = environ.get('PERMITTED_TG_CHAT_USERNAMES', '').split(',')
 PERMITTED_TG_CHAT_USERNAMES = [username.strip() for username in PERMITTED_TG_CHAT_USERNAMES if username.strip()]
