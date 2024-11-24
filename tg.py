@@ -71,7 +71,8 @@ def send_message(chat_id: int, message: str) -> None:
 def get_media_url_and_size(message: dict, chat_id_to_send_error: int) -> tuple[str, int]:
     media_id = message.get('voice', message.get('audio',
             message.get('video', message.get('video_note', 
-            message.get('document', message.get('photo')[-1])))))['file_id']
+            message.get('document', 
+            message.get('photo', [{'file_id':''}])[-1])))))['file_id']
     debug(f'{media_id = }')
     get_file_url = f'{TELEGRAM_BOT_API_PREFIX}' \
             f'{cfg.TELEGRAM_BOT_TOKEN}/getfile?file_id={media_id}'

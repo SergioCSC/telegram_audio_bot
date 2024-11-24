@@ -12,7 +12,7 @@ def summarize(model_name: str, text: str | None = None, file_ext: str | None = N
 
     model = genai.GenerativeModel(model_name=model_name)
     text = text if text else ''
-    length_restriction_prompt = f"Please use exactly {cfg.TEXT_LENGTH_IN_WORDS_TO_SUMMARIZE} words"
+    length_restriction_prompt = f"Please use about {cfg.TEXT_LENGTH_IN_WORDS_TO_SUMMARIZE} words or less"
     prompt = f"Summarize this into the Russian language. " \
             f"Please keep the style and do not add any additional information. " \
             f"{length_restriction_prompt}: {text}"
