@@ -350,7 +350,10 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     return output_text
 
 
-def _summarize(text: str, message_marker: str, chat_id: int) -> str:
+def _summarize(message_marker: str, chat_id: int, text: str | None = None,
+               file_ext: str | None = None,
+               file_bytes: bytes | None = None) -> str:
+
     warning('start')
     debug(f'{text = }')
     summarization_model = cfg.GEMINI_MODEL
@@ -358,8 +361,8 @@ def _summarize(text: str, message_marker: str, chat_id: int) -> str:
     tg.send_message(chat_id, chat_message)
     # output_text = hf.summarize(cfg.HUGGING_FACE_TEXT_MODEL,
     #                            text=text)  #, chat_temp=0)
-    output_text = gemini_conn.summarize(summarization_model, 
-                                        text=text)
+    output_text = gemini_conn.summarize(summarization_model,  text=text,
+                                       file_ext=file_ext, file_bytes=file_bytes)
     debug(f'{output_text = }')
     warning('finish')
     return output_text
@@ -394,7 +397,19 @@ def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int
         # output_text = '''Automatic summarization is the process of shortening a set of data computationally, to create a subset (a summary) that represents the most important or relevant information within the original content. Artificial intelligence algorithms are commonly developed and employed to achieve this, specialized for different types of data. Text summarization is usually implemented by natural language processing methods, designed to locate the most informative sentences in a given document.[1] On the other hand, visual content can be summarized using computer vision algorithms. Image summarization is the subject of ongoing research; existing approaches typically attempt to display the most representative images from a given image collection, or generate a video that only includes the most important content from the entire collection.[2][3][4] Video summarization algorithms identify and extract from the original video content the most important frames (key-frames), and/or the most important video segments (key-shots), normally in a temporally ordered fashion.[5][6][7][8] Video summaries simply retain a carefully selected subset of the original video frames and, therefore, are not identical to the output of video synopsis algorithms, where new video frames are being synthesized based on the original video content.'''
         # output_text = '''Hey, guys, do you remember that tomorrow we are planning to get together at 5 o'clock. But you probably don't realize that tomorrow our speaking club turns one year old, exactly a year ago, Irina and I decided that it will be very boring in Kobuleti if in the evenings in the cold November weather we do not have the opportunity to walk along the embankment and practice English. And it's really cool that we've been together for a whole year and don't plan to split up. Not every community has overcome this line. So I congratulate everyone on our holiday.'''
         if len(output_text) > cfg.TEXT_LENGTH_IN_WORDS_TO_SUMMARIZE:
-            output_text = _summarize(output_text, message_marker, chat_id)
+            output_text = _summarize(message_marker, chat_id, output_text)
+
+    elif 'application/pdf' in message.get('document', {}).get('mime_type', '') \
+            or 'image/' in message.get('document', {}).get('mime_type', '') \
+            or message.get('photo'):
+        
+        file_name = message.get('document', {}).get('file_name', 'image.jpg')
+        file_ext = '.' + file_name.split('.')[-1] if len(file_name.split('.')) > 1 else ''
+        file_url, file_size = tg.get_media_url_and_size(message, chat_id)
+        response = requests.get(file_url)
+        file_bytes = response.content
+        output_text = _summarize(message_marker, chat_id, 
+                                 file_ext=file_ext, file_bytes=file_bytes)
 
     elif input_text := message.get('text'):
         if not input_text or input_text.lower() == '/start':
