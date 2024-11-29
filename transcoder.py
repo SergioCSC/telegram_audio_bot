@@ -108,6 +108,10 @@ def extract_mp3_from_video(mp4_bytes: bytes, video_ext: str) -> bytes:
 
             with open(audio_filename, 'rb') as audio_file:
                 mp3_bytes = audio_file.read()
+
+    audio_file = pathlib.Path(audio_filename)
+    if audio_file.exists():
+        audio_file.unlink()
             
     debug('finish')
     return mp3_bytes

@@ -4,8 +4,9 @@ import requests
 
 import json
 import urllib
+import tempfile
 import logging
-from logging import info, debug
+from logging import error, info, warning, debug
 
 
 TELEGRAM_BOT_API_PREFIX = 'https://api.telegram.org/bot'
@@ -37,7 +38,7 @@ def get_update_message(event: dict) -> dict:
 def send_message(chat_id: int, message: str) -> None:
     debug('start')
     if not chat_id or not message:
-        info('not chat id or not message. Finish')
+        error(f'Something is empty: {chat_id =}  {message = }. Finish')
         return
 
     messages = [message[i: i + 4000] for i in range(0, len(message), 4000)]
@@ -51,6 +52,7 @@ def send_message(chat_id: int, message: str) -> None:
                 f'{cfg.TELEGRAM_BOT_TOKEN}'
                 f'/sendMessage'
                 f'?chat_id={chat_id}'
+                # f'&parse_mode=Markdown'
                 f'&text={message}'
             )
     
@@ -58,12 +60,48 @@ def send_message(chat_id: int, message: str) -> None:
             result = requests.get(telegram_request_url)
             debug(f'{telegram_request_url = }')
             if result.status_code != 200:
-                info(f'{result.status_code = } \
+                error(f'{result.status_code = } \
                         \n{telegram_request_url = } \
-                        \n{result.text = }')
+                        \n{result.text = } \
+                        \n{message = }')
         except urllib.error.HTTPError as e:
-            info(f'HTTPError for url: {telegram_request_url} \
+            error(f'HTTPError for url: {telegram_request_url} \
                     \n\nException: {e}')
+
+    debug('finish')
+
+
+def send_doc(chat_id: int, content_marker: str, text: str) -> None:
+    debug('start')
+    if not chat_id or not text:
+        error(f'Something is empty: {chat_id =} {text = }. Finish')
+        return
+
+    telegram_request_url = (
+            f'{TELEGRAM_BOT_API_PREFIX}'
+            f'{cfg.TELEGRAM_BOT_TOKEN}'
+            f'/sendDocument'
+            f'?chat_id={chat_id}'
+            # f'&parse_mode=Markdown'
+            # f'&caption={summary}'
+        )
+    filename = content_marker + '.txt'
+    files = {"document": (filename, text, "text/plain")}
+    
+    try:
+        result = requests.post(telegram_request_url, files=files)
+        debug(f'{telegram_request_url = }')
+        if result.status_code != 200:
+            error_message = f'{result.status_code = }' \
+                            f'\n{telegram_request_url = }' \
+                            f'\n{result.text = }' \
+                            f'\n{text = }'
+            error(error_message)
+            send_message(chat_id, error_message)
+
+    except urllib.error.HTTPError as e:
+        info(f'HTTPError for url: {telegram_request_url} \
+                \n\nException: {e}')
 
     debug('finish')
 
@@ -88,7 +126,7 @@ def get_media_url_and_size(message: dict, chat_id_to_send_error: int) -> tuple[s
         error_message = f'{result.status_code = }' \
                 f'\n\n{result.text = }' \
                 f'\n\n{result_json = }'
-        info(error_message)
+        error(error_message)
         send_message(chat_id=chat_id_to_send_error, message=error_message)
         return '', -1
 

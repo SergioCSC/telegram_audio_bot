@@ -30,10 +30,26 @@ from collections import namedtuple
 
 
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
+UNSUCCESSFULL_RESPONSE = {'statusCode': 500, 'body': 'Failure'}
 EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
 
 
 Model = namedtuple('Model', ['site', 'name'])
+
+
+def _send_text(chat_id: int, content_marker: str, text: str) -> None:
+    warning('start')
+    if chat_id in (0, -1):
+        error(f'{chat_id = }. {content_marker = }. {text = }')
+
+    if len(text) > cfg.TEXT_LENGTH_TO_SUMMARIZE:
+        summary: str = _summarize(content_marker, chat_id, text)
+        # summary = """Кризис Римской империи III века (235-285 гг.) характеризовался экономическим, социальным и политическим коллапсом.  Смерть Александра Севера в 235 г. ознаменовала начало "императорской чехарды" – смены 29 императоров, большинство из которых погибли насильственной смертью.  Период предшествовал гражданской войне 193-197 гг. и правлению династии Северов (193-235 гг.), характеризующейся "военной монархией".  Кризис разделился на три этапа. Первый (235-268 гг.) –  постоянные войны, налоговые перегрузки,  потеря ряда территорий (Дакия,  восточная Валахия).  Создана система дукатов – военных округов под командованием duces. Второй (кульминационный) этап (253-268 гг., правление Галлиена) – одновременные войны на нескольких фронтах (алеманны, франки, готы, персы),  дезинтеграция империи (Галльская империя, Пальмирское царство).  Галлиен провёл армейские реформы. Третий этап (268-285 гг.) – остановка варварских вторжений,  восстановление единства империи династией иллирийцев (Клавдий II, Аврелиан),  победы над внешними врагами.  Убийство Карина в 285 г. и приход Диоклетиана положили конец кризису и началу домината. Экономический спад проявлялся в аграризации, разрушении городов, упадке торговли и ремесла,  гиперинфляции из-за "порчи монет", переходе к натуральному обмену.  Послекризисное положение улучшилось частично, но общеимперский рынок был разрушен.\n"""
+        tg.send_message(chat_id, summary)
+        tg.send_doc(chat_id, content_marker, text)
+    else:
+        tg.send_message(chat_id, text)
+    warning('finish')
 
 
 def lambda_handler(event: dict, context) -> dict:
@@ -41,10 +57,14 @@ def lambda_handler(event: dict, context) -> dict:
     warning('start')
     update_message: dict = tg.get_update_message(event)
 
-    result_text, chat_id = _get_text_and_chat_id(update_message)
+    chat_id = int(update_message.get('chat', {}).get('id', 0))
+    if not chat_id:
+        error(f'{EMPTY_RESPONSE_STR}\n\n{chat_id = }\n\n{update_message = }')
+        return UNSUCCESSFULL_RESPONSE
 
-    if chat_id != -1:
-        tg.send_message(chat_id, result_text)
+    result_text = _get_text(update_message)
+    content_marker = _get_content_marker(update_message, result_text)
+    _send_text(chat_id, content_marker, result_text)
 
     warning('finish')
     return SUCCESSFULL_RESPONSE
@@ -368,22 +388,22 @@ def _summarize(message_marker: str, chat_id: int, text: str | None = None,
     return output_text
 
 
-def _get_text_and_chat_id(message: dict, chat_temp: float = 1) -> tuple[str, int]:
+def _get_text(message: dict, chat_temp: float = 1) -> str:
     
     if not message:
-        error(f'EMPTY_RESPONSE_STR')
-        return EMPTY_RESPONSE_STR, -1
+        error(f'{EMPTY_RESPONSE_STR}')
+        return EMPTY_RESPONSE_STR
     
     chat_id = int(message.get('chat', {}).get('id', 0))
     if not chat_id:
-        error(f'EMPTY_RESPONSE_STR\n\n{chat_id = }\n\n{message = }')
-        return EMPTY_RESPONSE_STR, -1
+        error(f'{EMPTY_RESPONSE_STR}\n\n{chat_id = }\n\n{message = }')
+        return EMPTY_RESPONSE_STR
 
     tg_chat_username = message.get('chat', {}).get('username', None)
     if tg_chat_username not in cfg.PERMITTED_TG_CHAT_USERNAMES:
         error_message = f'WRONG_TG_CHAT_USERNAME:\n\n{chat_id = }\n\n{tg_chat_username = }\n\n{message = }'
         error(error_message)
-        return error_message, chat_id
+        return error_message
     
     message_marker = _get_media_marker(message)
 

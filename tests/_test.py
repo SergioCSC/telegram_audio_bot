@@ -12,7 +12,7 @@ def test_voice_1():  # very short voice
     file_id = 'AwACAgIAAxkBAAOXZA-7de2FoOIamPJLYCJICOAkyw4AAmAmAAIZ-IBI1p4117ajKzgvBA'
 
     message = get_voice_message_from_file_id(file_id)
-    text, chat_id = lambda_function._get_text_and_chat_id(message)
+    text = lambda_function._get_text(message)
     assert text == 'Субтитры делал DimaTorzok'
 
 
@@ -20,14 +20,14 @@ def test_voice_2():  # short voice with certain text
     file_id = 'AwACAgIAAxkBAAOjZBAQaRzy2C_s43Hw2iyBMNCBxKgAAuwmAAIZ-IBIgJACXptgfmAvBA'
 
     message = get_voice_message_from_file_id(file_id)
-    text, chat_id = lambda_function._get_text_and_chat_id(message)
+    text = lambda_function._get_text(message)
     assert text == 'Проверка расшифровки'
 
 
 def test_voice_3():  # big voice (> 25 Mb)
     file_id = 'AwACAgIAAxkBAAOlZBAZzwypqnCavQicUWXQi7v9KaUAApslAAJbWWlI3-G3OAcdrB8vBA'
     message = get_voice_message_from_file_id(file_id)
-    text, chat_id = lambda_function._get_text_and_chat_id(message)
+    text = lambda_function._get_text(message)
     assert text.startswith('Статус код ответа OpenAI: 413\nСообщение об ошибке от OpenAI: Maximum content size limit (26214400) exceeded')
 
 
@@ -42,7 +42,7 @@ def test_voice_4():  # forwarded voice
             "username": "rrrrrrrrrrr"
         },
 
-    text, chat_id = lambda_function._get_text_and_chat_id(message)
+    text = lambda_function._get_text(message)
     assert text == 'Проверка расшифровки'
 
 
@@ -50,7 +50,7 @@ def test_chat_1():
     message = TEMPLATE_TEXT_MESSAGE_WITHOUT_TEXT.copy()
     message['text'] = 'Сколько ног у кошки?'
     chat_temp = 0
-    text, chat_id = lambda_function._get_text_and_chat_id(message, chat_temp=chat_temp)
+    text = lambda_function._get_text(message, chat_temp=chat_temp)
     assert text in ('У кошки 4 ноги.', 'У кошки четыре ноги.')
 
 
@@ -159,7 +159,7 @@ def test_voice_5():  # very short voice
     file_id = 'AwACAgIAAxkBAAIF12alWkqG7-nAn0SD68FoXvW29tQ6AAJcUwACO7opSUe2GJBnu6pJNQQ'
 
     message = get_voice_message_from_file_id(file_id)
-    text, chat_id = lambda_function._get_text_and_chat_id(message)
+    text = lambda_function._get_text(message)
     assert text == 'Субтитры делал DimaTorzok'
 
 
