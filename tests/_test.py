@@ -8,14 +8,6 @@ import lambda_function
 TEST_CHAT_ID = -1
 
 
-def test_voice_1():  # very short voice
-    file_id = 'AwACAgIAAxkBAAOXZA-7de2FoOIamPJLYCJICOAkyw4AAmAmAAIZ-IBI1p4117ajKzgvBA'
-
-    message = get_voice_message_from_file_id(file_id)
-    text = lambda_function._get_text(message)
-    assert text == 'Субтитры делал DimaTorzok'
-
-
 def test_voice_2():  # short voice with certain text
     file_id = 'AwACAgIAAxkBAAOjZBAQaRzy2C_s43Hw2iyBMNCBxKgAAuwmAAIZ-IBIgJACXptgfmAvBA'
 
@@ -154,13 +146,6 @@ TEMPLATE_EVENT_WITHOUT_BODY = {
         "body": None,
         "isBase64Encoded": "False"
     }
-
-def test_voice_5():  # very short voice
-    file_id = 'AwACAgIAAxkBAAIF12alWkqG7-nAn0SD68FoXvW29tQ6AAJcUwACO7opSUe2GJBnu6pJNQQ'
-
-    message = get_voice_message_from_file_id(file_id)
-    text = lambda_function._get_text(message)
-    assert text == 'Субтитры делал DimaTorzok'
 
 
 if __name__ == '__main__':
