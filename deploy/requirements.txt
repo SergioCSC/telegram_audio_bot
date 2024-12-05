@@ -4,4 +4,6 @@ audio-extract==0.6.0
 gradio_client==1.3.0
 deepgram-sdk==3.7.6
 google-generativeai==0.8.3
-yt-dlp
+pytube2
+selenium
+webdriver-manager

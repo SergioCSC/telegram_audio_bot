@@ -8,7 +8,13 @@ import hugging_face_conn as hf
 
 from gradio_client import Client  #, handle_file
 from gradio_client.utils import Status
-import yt_dlp
+# import yt_dlp
+from pytube import YouTube
+from pytube.download_helper import (
+    download_videos_from_channels,
+    download_video,
+    download_videos_from_list,
+)
 
 # from dotenv import load_dotenv
 from deepgram import (
@@ -435,41 +441,76 @@ def _recognize(message_marker: str, chat_id: int,
 def download_subtitles(video_url: str, 
                        language: str ='ru', 
                        format: str ='json3') -> tuple[str, str]:
-    ydl_opts = {
-        'writesubtitles': True,  # Enable downloading subtitles
-        'writeautomaticsub': True,  # Fallback to auto-generated subtitles if manual are not available
-        'skip_download': True,  # Skip downloading the video itself
-        'subtitleslangs': [language],  # Specify the language of the subtitles
-        'subtitlesformat': format,  # Specify the format of the subtitles
-    }
+    
+    # video = download_video(url="https://www.youtube.com/watch?v=EyxgV05oBwA")
 
+    
+    # YouTube('https://youtu.be/EyxgV05oBwA').streams.first().download()
+    # yt = YouTube('https://youtu.be/EyxgV05oBwA')
+    # result = yt.streams \
+    #         .filter(progressive=True, file_extension='mp4') \
+    #         .order_by('resolution') \
+    #         .desc() \
+    #         .first() \
+    #         .download() \
+
+    yt = YouTube(video_url)
+    name: str = yt.title
+    if name:
+        name = name.replace('/', '-')
+        name += ' — subtitles'
+
+    captions = yt.captions
     subtitles_dict = None
-    name: str = NONAME
-    # Custom downloader to capture subtitles in memory
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info = ydl.extract_info(video_url, download=False)
-            subtitles = info.get('requested_subtitles')
-            name: str = info.get('title', NONAME)
-            if name:
-                name = name.replace('/', '-')
-                name += ' — subtitles'
-            
-            if subtitles and language in subtitles:
-                url = subtitles[language]['url']
-                # Fetch subtitle content from the URL
-                response = requests.get(url)
-                response.raise_for_status()
-                subtitles_dict = response.json()
-        except Exception as e:
-            error_str = f"Error downloading subtitles: {e}"
-            error(error_str)
-            return error_str, name
-
+    if captions.get(language):
+        subtitles_dict = captions.get(language, {}).json_captions
+    elif captions.get('a.' + language):
+        subtitles_dict = captions.get('a.' + language, {}).json_captions
+    else:
+        error_str = f"No subtitles available for the given video."
+        error(error_str)
+        return error_str, NONAME
+    
     if not subtitles_dict:
         error_str = f"No subtitles available for the given video."
         error(error_str)
-        return error_str, name
+        return error_str, NONAME
+    
+    # ydl_opts = {
+    #     'writesubtitles': True,  # Enable downloading subtitles
+    #     'writeautomaticsub': True,  # Fallback to auto-generated subtitles if manual are not available
+    #     'skip_download': True,  # Skip downloading the video itself
+    #     'subtitleslangs': [language],  # Specify the language of the subtitles
+    #     'subtitlesformat': format,  # Specify the format of the subtitles
+    # }
+
+    # subtitles_dict = None
+    # name: str = NONAME
+    # # Custom downloader to capture subtitles in memory
+    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #     try:
+    #         info = ydl.extract_info(video_url, download=False)
+    #         subtitles = info.get('requested_subtitles')
+    #         name: str = info.get('title', NONAME)
+    #         if name:
+    #             name = name.replace('/', '-')
+    #             name += ' — subtitles'
+            
+    #         if subtitles and language in subtitles:
+    #             url = subtitles[language]['url']
+    #             # Fetch subtitle content from the URL
+    #             response = requests.get(url)
+    #             response.raise_for_status()
+    #             subtitles_dict = response.json()
+    #     except Exception as e:
+    #         error_str = f"Error downloading subtitles: {e}"
+    #         error(error_str)
+    #         return error_str, name
+
+    # if not subtitles_dict:
+    #     error_str = f"No subtitles available for the given video."
+    #     error(error_str)
+    #     return error_str, name
     
     plain_text = ''
 

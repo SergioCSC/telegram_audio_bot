@@ -15,7 +15,10 @@ COPY deploy/requirements.txt .
 RUN python -m pip install --target ${FUNCTION_DIR} awslambdaric
 RUN python -m pip install --target ${FUNCTION_DIR} -r requirements.txt \
     && rm -f ${FUNCTION_DIR}/googleapiclient/discovery_cache/documents/*.json \
-    && rm -rf ${FUNCTION_DIR}/yt_dlp/extractor/__pycache__/
+    && rm -rf ${FUNCTION_DIR}/selenium/webdriver/common/macos/ \
+    && rm -rf ${FUNCTION_DIR}/selenium/webdriver/common/windows/ \
+    && rm -rf ${FUNCTION_DIR}/selenium/webdriver/common/devtools/
+    # && rm -rf ${FUNCTION_DIR}/yt_dlp/extractor/__pycache__/
 
 FROM python:${RUNTIME_VERSION}-slim-${DISTRO_VERSION}
 
