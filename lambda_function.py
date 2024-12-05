@@ -414,12 +414,11 @@ def _summarize(message_marker: str, chat_id: int, text: str) -> str:
 
     warning('start')
     debug(f'{text = }')
-    summarization_model = cfg.GEMINI_MODEL
-    chat_message = f'{message_marker}\n\nSending the text to {summarization_model} for summarization ...'
+    chat_message = f'{message_marker}\n\nSending the text to Gemini for summarization ...'
     tg.send_message(chat_id, chat_message)
     # output_text = hf.summarize(cfg.HUGGING_FACE_TEXT_MODEL,
     #                            text=text)  #, chat_temp=0)
-    output_text = gemini_conn.summarize(summarization_model,  text=text)
+    output_text = gemini_conn.summarize(chat_id, text=text)
     debug(f'{output_text = }')
     warning('finish')
     return output_text
@@ -429,10 +428,9 @@ def _recognize(message_marker: str, chat_id: int,
                mime_type: str, file_ext: str, file_bytes: bytes) -> str:
 
     warning('start')
-    recognition_model = cfg.GEMINI_MODEL
-    chat_message = f'{message_marker}\n\nSending the {file_ext} file to {recognition_model} for recognition ...'
+    chat_message = f'{message_marker}\n\nSending the {file_ext} file to Gemini for recognition ...'
     tg.send_message(chat_id, chat_message)
-    output_text = gemini_conn.recognize(recognition_model, mime_type=mime_type, file_ext=file_ext, file_bytes=file_bytes)
+    output_text = gemini_conn.recognize(chat_id, mime_type=mime_type, file_ext=file_ext, file_bytes=file_bytes)
     debug(f'{output_text = }')
     warning('finish')
     return output_text

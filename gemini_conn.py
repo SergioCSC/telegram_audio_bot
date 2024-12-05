@@ -2,17 +2,18 @@ import tempfile
 import config as cfg
 
 import google.generativeai as genai
-from google.api_core.exceptions import InvalidArgument
+from google.api_core.exceptions import InvalidArgument, ResourceExhausted
 
 import os
+
+import tg
 
 
 genai.configure(api_key=cfg.GEMINI_API_KEY)
 
 
-def summarize(model_name: str, text: str) -> str:
+def summarize(chat_id: int, text: str) -> str:
 
-    model = genai.GenerativeModel(model_name=model_name)
     short_length = cfg.TEXT_LENGTH_TO_SUMMARIZE // 4
     long_length = cfg.TEXT_LENGTH_TO_SUMMARIZE * 3 // 4
     length_restriction_prompt = f"Please make 2 summaries: short and long." \
@@ -26,18 +27,31 @@ def summarize(model_name: str, text: str) -> str:
             f" Please keep the style and do not add any additional information." \
             f" {length_restriction_prompt}: {text}"
     
-    response = model.generate_content(prompt,
-        # generation_config=genai.types.GenerationConfig(
-        #         # max_output_tokens=50,
-        #         # temperature=1.0,
-        #         )
-    )
+    try:
+        model_name = cfg.GEMINI_PRO_MODEL
+        tg.send_message(chat_id, "Try with Gemini model: " + model_name)
+        model = genai.GenerativeModel(model_name=model_name)
+        response = model.generate_content(prompt,
+            # generation_config=genai.types.GenerationConfig(
+            #         # max_output_tokens=50,
+            #         # temperature=1.0,
+            #         )
+        )
+    except ResourceExhausted as e:
+        model_name = cfg.GEMINI_FLASH_MODEL
+        tg.send_message(chat_id, "Try with Gemini model: " + model_name)
+        model = genai.GenerativeModel(model_name=model_name)
+        response = model.generate_content(prompt,
+            # generation_config=genai.types.GenerationConfig(
+            #         # max_output_tokens=50,
+            #         # temperature=1.0,
+            #         )
+        )
     return response.text
 
 
-def recognize(model_name: str, mime_type: str, file_ext: str, file_bytes: bytes) -> str:
+def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) -> str:
 
-    model = genai.GenerativeModel(model_name=model_name)
     if mime_type.startswith('application/') \
             or mime_type.startswith('text/'):
         document_type = 'document'
@@ -58,9 +72,20 @@ def recognize(model_name: str, mime_type: str, file_ext: str, file_bytes: bytes)
         temp_file.close()
     
         try:
+            model_name = cfg.GEMINI_PRO_MODEL
+            tg.send_message(chat_id, "Try with Gemini model: " + model_name)
+            model = genai.GenerativeModel(model_name=model_name)
             uploaded_file = genai.upload_file(temp_file.name)
             model_response = model.generate_content([prompt, uploaded_file])
-    
+        except ResourceExhausted as e:
+            try:
+                model_name = cfg.GEMINI_FLASH_MODEL
+                tg.send_message(chat_id, "Try with Gemini model: " + model_name)
+                model = genai.GenerativeModel(model_name=model_name)
+                uploaded_file = genai.upload_file(temp_file.name)
+                model_response = model.generate_content([prompt, uploaded_file])
+            except (InvalidArgument, ValueError, FileNotFoundError) as e:
+                return f'{model_name} failed\n{mime_type = }\n{file_ext = }\nException: {str(e)}'
         except (InvalidArgument, ValueError, FileNotFoundError) as e:
             return f'{model_name} failed\n{mime_type = }\n{file_ext = }\nException: {str(e)}'
 
@@ -68,5 +93,5 @@ def recognize(model_name: str, mime_type: str, file_ext: str, file_bytes: bytes)
 
 
 if __name__ == "__main__":
-    response = summarize("gemini-1.5-flash", "Write a story about a magic backpack.")
+    response = summarize("Write a story about a magic backpack.")
     print(response)

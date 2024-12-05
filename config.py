@@ -22,7 +22,8 @@ HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
 
 DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
 
-GEMINI_MODEL = environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
+GEMINI_PRO_MODEL = environ.get('GEMINI_PRO_MODEL', 'gemini-1.5-pro')
+GEMINI_FLASH_MODEL = environ.get('GEMINI_FLASH_MODEL', 'gemini-1.5-flash')
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
                                  # 'nlogn/openai-whisper-small')
