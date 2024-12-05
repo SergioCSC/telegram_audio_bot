@@ -10,11 +10,12 @@ from gradio_client import Client  #, handle_file
 from gradio_client.utils import Status
 # import yt_dlp
 from pytube import YouTube
-from pytube.download_helper import (
-    download_videos_from_channels,
-    download_video,
-    download_videos_from_list,
-)
+# from pytube.download_helper import (
+#     download_videos_from_channels,
+#     download_video,
+#     download_videos_from_list,
+# )
+from pytube.exceptions import PytubeError
 
 # from dotenv import load_dotenv
 from deepgram import (
@@ -452,13 +453,19 @@ def download_subtitles(video_url: str,
     #         .first() \
     #         .download() \
 
-    yt = YouTube(video_url)
-    name: str = yt.title
-    if name:
-        name = name.replace('/', '-')
-        name += ' — subtitles'
+    try:
+        yt = YouTube(video_url)
+        name: str = yt.title
+        if name:
+            name = name.replace('/', '-')
+            name += ' — subtitles'
 
-    captions = yt.captions
+        captions = yt.captions
+    except PytubeError as e:
+        error_str = f"Error downloading subtitles: {e}"
+        error(error_str)
+        return error_str, NONAME
+
     subtitles_dict = None
     if captions.get(language):
         subtitles_dict = captions.get(language, {}).json_captions
