@@ -159,12 +159,15 @@ def get_bot_description(chat_id_to_send_error: int) -> str:
 
 
 def delete_webhook() -> None:
+    warning('Deleting webhook ...')
     delete_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
         '/deletewebhook'
     requests.get(delete_webhook_url)
+    warning('Webhook deleted.')
 
 
 def set_webhook() -> None:
+    warning('Setting webhook ...')
     allowed_updates = ['message', 'edited_message']
     allowed_updates_jsons = json.dumps(allowed_updates)
     set_webhook_url = f'{TELEGRAM_BOT_API_PREFIX}{cfg.TELEGRAM_BOT_TOKEN}' \
@@ -173,3 +176,4 @@ def set_webhook() -> None:
         f'&allowed_updates={allowed_updates_jsons}' \
 
     requests.get(set_webhook_url)
+    warning('Webhook is set.')

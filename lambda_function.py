@@ -461,7 +461,7 @@ def download_subtitles(video_url: str,
             name += ' — subtitles'
 
         captions = yt.captions
-    except PytubeError as e:
+    except Exception as e:
         error_str = f"Error downloading subtitles: {e}"
         error(error_str)
         return error_str, NONAME
