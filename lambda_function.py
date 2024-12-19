@@ -559,44 +559,48 @@ def _download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]
 
     warning('start')
     debug(f'{video_url = }')
-    
-    with tempfile.NamedTemporaryFile(mode='wb', suffix='.mp3') as audio_file:
+    temp_dir = tempfile.gettempdir()
 
-        audio_filename = audio_file.name
-        ydl_opts = {
-            'format': 'worstaudio',
-            # 'format': 'bestaudio/best',
-            # 'postprocessors': [{
-            #     'key': 'FFmpegExtractAudio',
-            #     'preferredcodec': 'mp3',
-            #     'preferredquality': '192',
-            # }],
-            # 'outtmpl': '%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
-            # 'quiet': True,  # Suppress console output
-            'outtmpl': audio_filename,
-            'logtostderr': True
-        }
+    ydl_opts = {
+        # 'format': 'worstaudio',
 
-    
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            try:
-                ydl.download([video_url])
-                # info_dict = ydl.extract_info(video_url, download = True)
-                # video_title = info_dict['title']
-                
-                # return b'', '.mp3'  # TODO ??? why '.mp3' ???
-            except DownloadError as e:
-                error(f"Error downloading audio: {e}")
-                tg.send_message(chat_id, f"Error downloading audio: {e}")
+        # 'format': 'bestaudio/best',
+        # 'postprocessors': [{
+        #     'key': 'FFmpegExtractAudio',
+        #     'preferredcodec': 'mp3',
+        #     'preferredquality': '192',
+        # }],
+        # 'outtmpl': '%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
+        # 'quiet': True,  # Suppress console output
+        'outtmpl': f'{temp_dir}/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
+        'logtostderr': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        try:
+            ydl.download([video_url])
+            info_dict = ydl.extract_info(video_url, download = True)
+            audio_filename = ydl.prepare_filename(info_dict)
+        except DownloadError as e:
+            error_message = f"Error downloading audio: {e}"
+            error(error_message)
+            tg.send_message(chat_id, error_message)
+            return b'', ''
+
+    if not audio_filename:
+        error_message = f"Error downloading audio: {audio_filename}"
+        error(error_message)
+        tg.send_message(chat_id, error_message)
+        return b'', ''
 
     with open(audio_filename, 'rb') as audio_file:
-        mp3_bytes = audio_file.read()
+        mp4_audio_bytes = audio_file.read()  # TODO: mp4 ? really ?
 
     audio_file = pathlib.Path(audio_filename)
     if audio_file.exists():
         audio_file.unlink()
     
-    return b'', ''
+    return mp4_audio_bytes, audio_file.suffix
 
 
 def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
@@ -652,8 +656,10 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         elif _is_link(message):
             video_url = input_text.split()[0]
             output_text, name = _download_subtitles(video_url=video_url)
-            if True: # TODO name == NONAME:
+            if name == NONAME:
                 audio_bytes, audio_ext = _download_audio_from_site(video_url, chat_id)
+                if not audio_bytes:
+                    return '', NONAME
                 output_text = _get_text_from_audio(audio_bytes=audio_bytes,
                                                    audio_ext=audio_ext,
                                                    chat_id=chat_id,
