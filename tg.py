@@ -85,7 +85,11 @@ def send_doc(chat_id: int, content_marker: str, text: str) -> None:
             # f'&parse_mode=Markdown'
             # f'&caption={summary}'
         )
-    filename = content_marker + '.txt'
+    file_ext = '.' + content_marker.lower().split('.')[-1]
+    if file_ext == '.md':
+        filename = content_marker
+    else:
+        filename = content_marker + '.txt'
     files = {"document": (filename, text, "text/plain")}
     
     try:

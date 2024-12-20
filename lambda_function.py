@@ -2,6 +2,7 @@
 import pathlib
 import config as cfg
 import gemini_conn
+from mark_it_down import mark_it_down
 import tg
 import transcoder
 import openai_conn
@@ -43,6 +44,7 @@ from collections import namedtuple
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
 UNSUCCESSFULL_RESPONSE = {'statusCode': 500, 'body': 'Failure'}
 EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
+MARK_IT_DOWN_EXTENSTIONS = ('.xlsx', '.docx', '.pptx', '.zip', '.html', '.xml', '.csv')
 NONAME = ''
 
 
@@ -57,7 +59,10 @@ def _send_text(chat_id: int,
     if chat_id in (0, -1):
         error(f'{chat_id = }. {content_marker = }. {text = }')
 
-    if len(text) > cfg.TEXT_LENGTH_TO_SUMMARIZE or is_subtitles:
+    file_ext = '.' + content_marker.lower().split('.')[-1]
+    if len(text) > cfg.TEXT_LENGTH_TO_SUMMARIZE \
+            or is_subtitles \
+            or file_ext == '.md':
         summary: str = _summarize(content_marker, chat_id, text)
         # summary = """Кризис Римской империи III века (235-285 гг.) характеризовался экономическим, социальным и политическим коллапсом.  Смерть Александра Севера в 235 г. ознаменовала начало "императорской чехарды" – смены 29 императоров, большинство из которых погибли насильственной смертью.  Период предшествовал гражданской войне 193-197 гг. и правлению династии Северов (193-235 гг.), характеризующейся "военной монархией".  Кризис разделился на три этапа. Первый (235-268 гг.) –  постоянные войны, налоговые перегрузки,  потеря ряда территорий (Дакия,  восточная Валахия).  Создана система дукатов – военных округов под командованием duces. Второй (кульминационный) этап (253-268 гг., правление Галлиена) – одновременные войны на нескольких фронтах (алеманны, франки, готы, персы),  дезинтеграция империи (Галльская империя, Пальмирское царство).  Галлиен провёл армейские реформы. Третий этап (268-285 гг.) – остановка варварских вторжений,  восстановление единства империи династией иллирийцев (Клавдий II, Аврелиан),  победы над внешними врагами.  Убийство Карина в 285 г. и приход Диоклетиана положили конец кризису и началу домината. Экономический спад проявлялся в аграризации, разрушении городов, упадке торговли и ремесла,  гиперинфляции из-за "порчи монет", переходе к натуральному обмену.  Послекризисное положение улучшилось частично, но общеимперский рынок был разрушен.\n"""
         tg.send_message(chat_id, summary)
@@ -164,7 +169,11 @@ def _get_content_marker(message: dict, message_text: str = '') -> str:
     if audio_info := message.get('audio'):
         return f'{sender}_{audio_info.get('performer', '')}_{audio_info.get('title', '')}'
     if doc_filename := message.get('document',{}).get('file_name', ''):
-        return f'{sender}_{doc_filename}'
+        file_ext = '.' + doc_filename.lower().split('.')[-1]
+        if file_ext in MARK_IT_DOWN_EXTENSTIONS:
+            return f'{sender}_{doc_filename}.md'
+        else:
+            return f'{sender}_{doc_filename}'
     if caption := message.get('caption'):
         return f'{sender}_{_first_words(caption)}'
     if message.get('video') or message.get('video_note') or message.get('voice'):
@@ -647,7 +656,11 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         file_url, file_size = tg.get_media_url_and_size(message, chat_id)
         response = requests.get(file_url)
         file_bytes = response.content
-        output_text = _recognize(message_marker, chat_id, mime_type=mime_type, 
+        
+        if file_ext in MARK_IT_DOWN_EXTENSTIONS:
+            output_text = mark_it_down(file_bytes, file_ext)
+        else:
+            output_text = _recognize(message_marker, chat_id, mime_type=mime_type, 
                                  file_ext=file_ext, file_bytes=file_bytes)
 
     elif input_text:
