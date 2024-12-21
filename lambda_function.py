@@ -667,21 +667,31 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         if input_text == '/start':
             output_text = tg.get_bot_description(chat_id)
         elif _is_link(message):
-            video_url = input_text.split()[0]
-            output_text, name = _download_subtitles(video_url=video_url)
+            url = input_text.split()[0]
+            output_text, name = _download_subtitles(video_url=url)
             if name == NONAME:
-                audio_bytes, audio_ext = _download_audio_from_site(video_url, chat_id)
+                audio_bytes, audio_ext = _download_audio_from_site(url, chat_id)
                 if not audio_bytes:
-                    return '', NONAME
-                output_text = _get_text_from_audio(audio_bytes=audio_bytes,
-                                                   audio_ext=audio_ext,
-                                                   chat_id=chat_id,
-                                                   content_marker=message_marker)
+                    response = requests.get(url)
+                    conent_type = response.headers.get('content-type', '')
+                    if conent_type.startswith('text/html'):
+                        file_bytes = response.content
+                        file_ext = '.html'
+                        output_text = mark_it_down(file_bytes, file_ext)
+                        # output_text = _recognize(message_marker, chat_id, mime_type=conent_type, 
+                        #         file_ext=file_ext, file_bytes=file_bytes)
+                    else:
+                        # output_text = _summarize(input_text, message_marker, chat_id)
+                        return '', NONAME
+                else:
+                    output_text = _get_text_from_audio(audio_bytes=audio_bytes,
+                            audio_ext=audio_ext,
+                            chat_id=chat_id,
+                            content_marker=message_marker)
         else:
-            #output_text = _summarize(input_text, message_marker, chat_id)
             tg.send_message(chat_id, 'I have to think about it. Just a moment ...')
             input_text = _correct_prompt(input_text)
-            output_text = openai_conn.chat(input_text, chat_temp)
+            output_text = _summarize(input_text, message_marker, chat_id)
 
     else:
         error_message = f"Can't parse this type of Telegram message: {message}"
