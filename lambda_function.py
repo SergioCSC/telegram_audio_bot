@@ -1,24 +1,17 @@
 
 import pathlib
 import config as cfg
-import gemini_conn
 from mark_it_down import mark_it_down
 import tg
 import transcoder
+import gemini_conn
 import openai_conn
+import youtube_conn
+from youtube_conn import NONAME
 import hugging_face_conn as hf
 
 from gradio_client import Client  #, handle_file
 from gradio_client.utils import Status
-import yt_dlp
-from yt_dlp.utils import DownloadError
-from pytube import YouTube
-# from pytube.download_helper import (
-#     download_videos_from_channels,
-#     download_video,
-#     download_videos_from_list,
-# )
-from pytube.exceptions import PytubeError
 
 # from dotenv import load_dotenv
 from deepgram import (
@@ -41,11 +34,11 @@ from logging import error, warning, info, debug
 from collections import namedtuple
 
 
+
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
 UNSUCCESSFULL_RESPONSE = {'statusCode': 500, 'body': 'Failure'}
 EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
 MARK_IT_DOWN_EXTENSTIONS = ('.xlsx', '.docx', '.pptx', '.zip', '.html', '.xml', '.csv')
-NONAME = ''
 
 
 Model = namedtuple('Model', ['site', 'name'])
@@ -461,157 +454,6 @@ def _recognize(message_marker: str, chat_id: int,
     return output_text
 
 
-def _download_subtitles(video_url: str, 
-                       language: str ='ru', 
-                       format: str ='json3') -> tuple[str, str]:
-    
-    # video = download_video(url="https://www.youtube.com/watch?v=EyxgV05oBwA")
-
-    
-    # YouTube('https://youtu.be/EyxgV05oBwA').streams.first().download()
-    # yt = YouTube('https://youtu.be/EyxgV05oBwA')
-    # result = yt.streams \
-    #         .filter(progressive=True, file_extension='mp4') \
-    #         .order_by('resolution') \
-    #         .desc() \
-    #         .first() \
-    #         .download() \
-
-    try:
-        yt = YouTube(video_url)
-        name: str = yt.title
-        if name:
-            name = name.replace('/', '-')
-            name += ' — subtitles'
-
-        captions = yt.captions
-    except Exception as e:
-        error_str = f"Error downloading subtitles: {e}"
-        error(error_str)
-        return error_str, NONAME
-
-    subtitles_dict = None
-    if captions.get(language):
-        subtitles_dict = captions.get(language, {}).json_captions
-    elif captions.get('a.' + language):
-        subtitles_dict = captions.get('a.' + language, {}).json_captions
-    else:
-        error_str = f"No subtitles available for the given video."
-        error(error_str)
-        return error_str, NONAME
-    
-    if not subtitles_dict:
-        error_str = f"No subtitles available for the given video."
-        error(error_str)
-        return error_str, NONAME
-    
-    # ydl_opts = {
-    #     'writesubtitles': True,  # Enable downloading subtitles
-    #     'writeautomaticsub': True,  # Fallback to auto-generated subtitles if manual are not available
-    #     'skip_download': True,  # Skip downloading the video itself
-    #     'subtitleslangs': [language],  # Specify the language of the subtitles
-    #     'subtitlesformat': format,  # Specify the format of the subtitles
-    # }
-
-    # subtitles_dict = None
-    # name: str = NONAME
-    # # Custom downloader to capture subtitles in memory
-    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-    #     try:
-    #         info = ydl.extract_info(video_url, download=False)
-    #         subtitles = info.get('requested_subtitles')
-    #         name: str = info.get('title', NONAME)
-    #         if name:
-    #             name = name.replace('/', '-')
-    #             name += ' — subtitles'
-            
-    #         if subtitles and language in subtitles:
-    #             url = subtitles[language]['url']
-    #             # Fetch subtitle content from the URL
-    #             response = requests.get(url)
-    #             response.raise_for_status()
-    #             subtitles_dict = response.json()
-    #     except Exception as e:
-    #         error_str = f"Error downloading subtitles: {e}"
-    #         error(error_str)
-    #         return error_str, name
-
-    # if not subtitles_dict:
-    #     error_str = f"No subtitles available for the given video."
-    #     error(error_str)
-    #     return error_str, name
-
-    plain_text = ''
-
-    for event in subtitles_dict.get('events', []):
-        for seg in event.get('segs', []):
-            word = seg.get('utf8', '')
-            plain_text += word
-        # start_time = event['tStartMs'] / 1000  # Convert milliseconds to seconds
-        # end_time = (event['tStartMs'] + event['dDurationMs']) / 1000
-        # print(f"[{start_time:.2f} -> {end_time:.2f}] {text}")
-
-    # Return the processed plain text
-    return plain_text, name
-
-
-def _download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
-    """
-    Downloads the audio from a video URL and returns it as a bytes object.
-
-    Args:
-        video_url (str): The URL of the video to download audio from.
-
-    Returns:
-        bytes: The audio data as a bytes object.
-    """
-
-    warning('start')
-    debug(f'{video_url = }')
-    temp_dir = tempfile.gettempdir()
-
-    ydl_opts = {
-        # 'format': 'worstaudio',
-
-        # 'format': 'bestaudio/best',
-        # 'postprocessors': [{
-        #     'key': 'FFmpegExtractAudio',
-        #     'preferredcodec': 'mp3',
-        #     'preferredquality': '192',
-        # }],
-        # 'outtmpl': '%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
-        # 'quiet': True,  # Suppress console output
-        'outtmpl': f'{temp_dir}/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
-        'logtostderr': True
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            ydl.download([video_url])
-            info_dict = ydl.extract_info(video_url, download = True)
-            audio_filename = ydl.prepare_filename(info_dict)
-        except DownloadError as e:
-            error_message = f"Error downloading audio: {e}"
-            error(error_message)
-            tg.send_message(chat_id, error_message)
-            return b'', ''
-
-    if not audio_filename:
-        error_message = f"Error downloading audio: {audio_filename}"
-        error(error_message)
-        tg.send_message(chat_id, error_message)
-        return b'', ''
-
-    with open(audio_filename, 'rb') as audio_file:
-        mp4_audio_bytes = audio_file.read()  # TODO: mp4 ? really ?
-
-    audio_file = pathlib.Path(audio_filename)
-    if audio_file.exists():
-        audio_file.unlink()
-    
-    return mp4_audio_bytes, audio_file.suffix
-
-
 def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
     
     if not message:
@@ -668,9 +510,9 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
             output_text = tg.get_bot_description(chat_id)
         elif _is_link(message):
             url = input_text.split()[0]
-            output_text, name = _download_subtitles(video_url=url)
+            output_text, name = youtube_conn.download_subtitles(video_url=url)
             if name == NONAME:
-                audio_bytes, audio_ext = _download_audio_from_site(url, chat_id)
+                audio_bytes, audio_ext = youtube_conn.download_audio_from_site(url, chat_id)
                 if not audio_bytes:
                     response = requests.get(url)
                     conent_type = response.headers.get('content-type', '')
@@ -767,7 +609,6 @@ def main():
 if __name__ == '__main__':
     # download_audio('https://youtu.be/EyxgV05oBwA?si=8pt3BVtC152O9GjG')
     # download_subtitles('https://youtu.be/EyxgV05oBwA?si=8pt3BVtC152O9GjG')
-    
+
     # tg.set_webhook()
     main()
-    

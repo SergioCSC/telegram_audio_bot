@@ -9,3 +9,4 @@ selenium
 webdriver-manager
 markitdown
 yt-dlp
+pytubefix
