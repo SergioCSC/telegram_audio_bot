@@ -480,7 +480,8 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
     input_text = str(input_text).strip()
     name = NONAME
 
-    if message.get('audio') or message.get('voice') \
+    # or message.get('voice') \ voice is not supported because of potential privacy issues
+    if message.get('audio') \
             or message.get('video') or message.get('video_note') \
             or 'video' in mime_type \
             or 'audio' in mime_type:
