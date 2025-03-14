@@ -33,6 +33,32 @@ NONAME = ''
 
 
 
+
+def download_youtube_video(url, output_path="./"):
+    try:
+        # Create YouTube object
+        youtube = YouTube(url)
+
+        import pytube
+        # Fix regex issue
+        # pytube.extract.regex_search = lambda pattern, string, group: ""  # Override with no-op if regex fails
+        
+        # Get the highest resolution stream
+        video_stream = youtube.streams.get_highest_resolution()
+
+        print(f"Downloading: {youtube.title}...")
+
+        # Download video
+        video_stream.download(output_path)
+
+        print(f"Download completed! Video saved to {output_path}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    
+
+
 def download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
     """
     Downloads the audio from a video URL and returns it as a bytes object.
@@ -226,5 +252,10 @@ def get_plain_text_from_subtitles_dict(subtitles_dict: dict) -> str:
 
 #     print(response)
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+
+    # main()
+
+    video_url = input("Enter the YouTube video URL: ")
+    output_directory = input("Enter the output directory (default is current directory): ") or "./"
+    download_youtube_video(video_url, output_directory)
