@@ -225,17 +225,17 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
 
     tg.send_message(chat_id, f'{content_marker} \
                     \n\nGetting media from Telegram ...')
-    media_url, media_size = tg.get_media_url_and_size(message, chat_id)
-    if not media_url:
+    media_bytes, media_size = tg.get_file_bytes_and_size(message, chat_id)
+    if not media_bytes:
         return ''
-    
+
     if media_size > cfg.MAX_MEDIA_SIZE:
         output_text = f'{content_marker}\n\nToo big media file ({_sizeof_fmt(media_size)}).'
     elif False: #_get_media_duration(message) > cfg.MEDIA_DURATION_TO_USE_SPACE:
        pass
 
     else:
-        audio_bytes, audio_ext = _get_audio_bytes_from_tg(media_url=media_url, message=message)
+        audio_bytes, audio_ext = tg._get_audio_bytes_and_ext(media_bytes=media_bytes, message=message)
         output_text, model_name = _get_text_from_audio(audio_bytes=audio_bytes,
                                            audio_ext=audio_ext,
                                            chat_id=chat_id,
@@ -316,9 +316,7 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         
         file_name = message.get('document', {}).get('file_name', 'image.jpg')
         file_ext = '.' + file_name.split('.')[-1] if len(file_name.split('.')) > 1 else ''
-        file_url, file_size = tg.get_media_url_and_size(message, chat_id)
-        response = requests.get(file_url)
-        file_bytes = response.content
+        file_bytes, file_size = tg.get_file_bytes_and_size(message, chat_id)
         
         if file_ext in MARK_IT_DOWN_EXTENSTIONS:
             output_text = mark_it_down(file_bytes, file_ext)

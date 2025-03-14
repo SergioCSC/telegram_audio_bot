@@ -1,10 +1,11 @@
 import config as cfg
+import tg_userbot
+import transcoder
 
 import requests
 
 import json
 import urllib
-import tempfile
 import logging
 from logging import error, info, warning, debug
 
@@ -146,33 +147,47 @@ def _get_audio_bytes_and_ext(media_bytes: str, message: dict) -> tuple[bytes, st
             audio_ext = '.mp3'
 
     return audio_bytes, audio_ext
+
+
+def get_file_bytes_and_size(message: dict, chat_id_to_send_error: int) \
+        -> tuple[bytes, int]:
+
+    file_description = message.get('voice', message.get('audio',
             message.get('video', message.get('video_note', 
             message.get('document', 
-            message.get('photo', [{'file_id':''}])[-1])))))['file_id']
-    debug(f'{media_id = }')
+            message.get('photo', [{}])[-1])))))
+
+    if not file_description:
+        error_message = f'No file description. {message = }'
+        error(error_message)
+        send_message(chat_id=chat_id_to_send_error, message=error_message)
+        return b'', -1
+
+    file_id = file_description.get('file_id')
+    debug(f'{file_id = }')
     get_file_url = f'{TELEGRAM_BOT_API_PREFIX}' \
-            f'{cfg.TELEGRAM_BOT_TOKEN}/getfile?file_id={media_id}'
+            f'{cfg.TELEGRAM_BOT_TOKEN}/getfile?file_id={file_id}'
     result = requests.get(get_file_url)
     result_json = result.json()
 
-    if result_json['ok'] is False \
-            or result.status_code != 200 \
-            or 'file is too big' in result_json.get('description', '').lower() \
-            or 'bad request' in result_json.get('description', '').lower() \
-            or not result_json.get('result', {}).get('file_path'):
+    if 'file is too big' in result_json.get('description', '').lower():
 
-        error_message = f'{result.status_code = }' \
-                f'\n\n{result.text = }' \
-                f'\n\n{result_json = }'
-        error(error_message)
-        send_message(chat_id=chat_id_to_send_error, message=error_message)
-        return '', -1
+        warning_message = f'File is too big. {result_json = }'
+        warning(warning_message)
+        send_message(chat_id=chat_id_to_send_error, message=warning_message)
+        file_unique_id = file_description.get('file_unique_id')
+        # file_bytes, file_size = tg_userbot.get_file_bytes_and_size(file_unique_id)
+        file_bytes, file_size = b'', -1
+        return file_bytes, file_size
 
-    media_path = result_json['result']['file_path']
-    media_size = result_json['result']['file_size']
-    media_url = f'https://api.telegram.org/file/bot' \
-            f'{cfg.TELEGRAM_BOT_TOKEN}/{media_path}'
-    return media_url, media_size
+    file_path = result_json['result']['file_path']
+    file_size = result_json['result']['file_size']
+
+    file_url = f'https://api.telegram.org/file/bot' \
+            f'{cfg.TELEGRAM_BOT_TOKEN}/{file_path}'
+    file_bytes = requests.get(file_url).content
+            
+    return file_bytes, file_size
 
 
 def get_bot_description(chat_id_to_send_error: int) -> str:
