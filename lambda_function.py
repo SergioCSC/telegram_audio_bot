@@ -287,7 +287,7 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
 
     tg_chat_username = message.get('chat', {}).get('username', None)
     if tg_chat_username not in cfg.PERMITTED_TG_CHAT_USERNAMES:
-        error_message = f'WRONG_TG_CHAT_USERNAME:\n\n{chat_id = }\n\n{tg_chat_username = }\n\n{message = }'
+        error_message = f'Please text to @n_log_n to use the bot\n\n{chat_id = }\n\n{tg_chat_username = }\n\n{message = }'
         error(error_message)
         return error_message, NONAME
     

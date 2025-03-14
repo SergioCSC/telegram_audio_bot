@@ -73,6 +73,17 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
     
         try:
             model_name = cfg.GEMINI_PRO_MODEL
+            
+            print("List of models that support generateContent:\n")
+            for m in genai.list_models():
+                if "generateContent" in m.supported_generation_methods:
+                    print(f'generateContent: {m.name}')
+
+            print("List of models that support embedContent:\n")
+            for m in genai.list_models():
+                if "embedContent" in m.supported_generation_methods:
+                    print(f'embedContent: {m.name}')
+            
             tg.send_message(chat_id, "Try with Gemini model: " + model_name)
             model = genai.GenerativeModel(model_name=model_name)
             uploaded_file = genai.upload_file(temp_file.name)
