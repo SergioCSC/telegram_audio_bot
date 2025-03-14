@@ -110,8 +110,42 @@ def send_doc(chat_id: int, content_marker: str, text: str) -> None:
     debug('finish')
 
 
-def get_media_url_and_size(message: dict, chat_id_to_send_error: int) -> tuple[str, int]:
-    media_id = message.get('voice', message.get('audio',
+def _get_audio_bytes_and_ext(media_bytes: str, message: dict) -> tuple[bytes, str]:
+    
+    def _is_video(message: dict) -> str:
+        return message.get('video') or message.get('video_note') \
+                or 'video' in message.get('document', {}).get('mime_type', '')
+
+    def _get_video_ext(message: dict) -> str:
+        video_ext = message.get('video', message.get('document', {})) \
+                .get('mime_type', '')
+        video_ext = '.' + video_ext.split('/')[1] if video_ext else ''
+        if not video_ext:
+            if message.get('video_note'):
+                video_ext = '.mp4'
+            else:
+                warning(f'unknown video type. {message = }')
+                video_ext = ''
+        return video_ext
+
+    if _is_video(message):
+        video_ext = _get_video_ext(message)
+        if video_ext:
+            audio_bytes = transcoder.extract_mp3_from_video(media_bytes, video_ext)
+            audio_ext = '.mp3'
+        else:
+            audio_bytes = b''
+            audio_ext = ''
+    else:  # audio or voice  TODO why?
+        audio_bytes = media_bytes
+        audio_ext = message.get('audio', message.get('voice', message.get('document', {}))) \
+                .get('mime_type', '')
+        audio_ext = '.' + audio_ext.split('/')[1] if audio_ext else ''
+        if not audio_ext:
+            warning(f'unknown audio type. {message = }')
+            audio_ext = '.mp3'
+
+    return audio_bytes, audio_ext
             message.get('video', message.get('video_note', 
             message.get('document', 
             message.get('photo', [{'file_id':''}])[-1])))))['file_id']

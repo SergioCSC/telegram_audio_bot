@@ -1,27 +1,24 @@
 
 import pathlib
 import config as cfg
+import deepgram_conn
 from mark_it_down import mark_it_down
 import tg
 import transcoder
+import groq_conn
 import gemini_conn
 import openai_conn
+from utils import _init_logging, _sizeof_fmt
 import youtube_conn
 from youtube_conn import NONAME
 import hugging_face_conn as hf
 
-from gradio_client import Client  #, handle_file
-from gradio_client.utils import Status
+
 
 # from dotenv import load_dotenv
-from deepgram import (
-    DeepgramClient,
-    PrerecordedOptions,
-    FileSource,
-    DeepgramError,
-)
 
 import io
+import os
 import sys
 import time
 import httpx
@@ -33,16 +30,10 @@ import logging
 from logging import error, warning, info, debug
 from collections import namedtuple
 
-
-
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
 UNSUCCESSFULL_RESPONSE = {'statusCode': 500, 'body': 'Failure'}
 EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
 MARK_IT_DOWN_EXTENSTIONS = ('.xlsx', '.docx', '.pptx', '.zip', '.html', '.xml', '.csv')
-
-
-Model = namedtuple('Model', ['site', 'name'])
-
 
 def _send_text(chat_id: int, 
                text: str,
@@ -117,15 +108,6 @@ def _correct_prompt(prompt: str) -> str:
     return prompt
 
 
-def _sizeof_fmt(num:int, suffix: str = "B") -> str:
-    for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):
-        if abs(num) < 1024.0:
-            rounded_down_num = num // 0.1 / 10
-            return f"{rounded_down_num:3.1f} {unit}{suffix}"
-        num /= 1024.0
-    return f"{num:.1f} Y{suffix}"
-
-
 def _get_media_duration(message: dict) -> int:
     duration = message.get('audio', message.get('voice', \
             message.get('video', message.get('video_note', {})))) \
@@ -187,77 +169,6 @@ def silence():
         sys.stderr = old
 
 
-def _audio2text_using_hf_model(model: str, audio_bytes: bytes, chat_id: int):
-    output_text, sleeping_time = hf.audio2text(model, audio_bytes)
-    while 'is currently loading' in output_text:
-        output_text = f'{output_text}   \
-                        \n\nPlease wait {sleeping_time} seconds ...'
-        warning(output_text)
-        tg.send_message(chat_id, output_text)
-        time.sleep(sleeping_time)
-        tg.send_message(chat_id, 'Sending an audio to Hugging face ...')
-        output_text, sleeping_time  \
-                = hf.audio2text(model, audio_bytes)
-    return output_text
-
-        
-def _audio2text_using_hf_space(audio_bytes: bytes,
-                               audio_ext: str,
-                               chat_id: int,
-                               tg_message_prefix: str) -> str:
-    debug('start')
-    try:
-
-        with tempfile.NamedTemporaryFile(mode='wb',
-                suffix=audio_ext,
-                delete_on_close=False) as audio_file:
-
-            audio_file.write(audio_bytes)
-            audio_file.close()
-
-            with open(audio_file.name, 'rb') as audio_file:
-                client = Client(cfg.HUGGING_FACE_SPACE)
-                _init_logging()
-                # api_str = client.view_api(return_format='str')
-                # debug(f'{api_str = }')
-                
-                # output_text = 
-                job = client.submit(
-                    # 'https://raw.githubusercontent.com/gradio-app/gradio/main/test/test_files/audio_sample.wav',
-                    # media_url,	# str (filepath or URL to file) in 'audio_path' Audio component
-                    # param_0=handle_file(audio_file.name),
-                    audio_file.name,
-                    "transcribe",	# str in 'Task' Radio component
-                    # True,	# bool in 'Group by speaker' Checkbox component
-                    api_name="/predict"
-                )
-                while job.status().code == Status.STARTING:
-                    time.sleep(5)
-                while not job.status().code in (Status.FINISHED, Status.CANCELLED):
-                    eta_seconds = int(job.status().eta - 1 if job.status().eta else 60)
-                    waiting_message = f'{tg_message_prefix}\nSpace: {cfg.HUGGING_FACE_SPACE} \
-                            \n\nEstimated time average: {eta_seconds} seconds \
-                            \n\nSleep during this time ...'
-                    if job.status().code == Status.IN_QUEUE:
-                        queue_size = job.status().queue_size
-                        waiting_message += f'\n\n{queue_size} in queue before us'
-                    warning(waiting_message)
-                    tg.send_message(chat_id, waiting_message)
-                    time.sleep(eta_seconds)
-                if job.status().success:
-                    output_text = job.result() 
-                else:
-                    output_text = f'{tg_message_prefix}\n\n{job.status().code = }\n\n{job.exception() = }\n\nFailed'
-                client.close()
-
-    except ValueError as e:
-        output_text = f'Failed. {type(e)} exception: {str(e)}' \
-                    f'\nException args: {e.args}'
-
-    debug('finish')
-    return output_text
-
-
 def _get_audio_bytes_from_tg(media_url: str, message: dict) -> tuple[bytes, str]:
     response = requests.get(media_url)
     if message.get('video') or message.get('video_note') \
@@ -285,116 +196,24 @@ def _get_audio_bytes_from_tg(media_url: str, message: dict) -> tuple[bytes, str]
 
 
 def _get_text_from_audio(audio_bytes: bytes, audio_ext: str, 
-                         chat_id: int, content_marker: str) -> str:
-
-    start_time = time.time()
-    audio_size = _sizeof_fmt(len(audio_bytes))
-    model = Model('Deepgram', cfg.DEEPGRAM_MODEL)
-    tg.send_message(chat_id, f'{content_marker}\nmodel: {model} \
-                    \n\nSending an audio ({audio_size}) to Deepgram ...'
-                    )
+                         chat_id: int, content_marker: str) -> tuple[str, str]:
     
-    deepgram = DeepgramClient(cfg.DEEPGRAM_API_KEY)
-    payload: FileSource = {
-        "buffer": audio_bytes,
-    }
-    options = PrerecordedOptions(
-        # model="nova-2",
-        model=model.name,
-        detect_language=True,
-        smart_format=True,
-        # diarize=True,
-        # summarize=True,
-        # topics=True,
-        # paragraphs=True,
-        # punctuate=True,
-        # utterances=True,
-        # utt_split=0.8,
-        # detect_entities=True,
-        # intents=True,
+    output_text, model_name = groq_conn.transcribe_audio(
+            audio_bytes, 
+            audio_ext,
+            chat_id,
+            content_marker
     )
-    myTimeout = httpx.Timeout(None, connect=20.0)
-    try:
-        # raise Exception('Deepgram is not available')
-        response = deepgram.listen.rest.v("1").transcribe_file(
-                payload, options, timeout=myTimeout)
-        alternatives = response["results"]["channels"][0]["alternatives"]
-        if alternatives:
-            output_text = alternatives[0]["transcript"]
-        else:
-            raise DeepgramError("empty answer from Deepgram")
-    except Exception as e:
 
-        output_text = f'model {model} failed. Exception: {str(e)}'
-        output_text = f'{content_marker}\n\nText: {output_text}'
-        
-        model = Model('Hugging_face', cfg.HUGGING_FACE_MODEL)
+    if not output_text:
+        output_text, model_name = deepgram_conn.transcribe_audio(
+                audio_bytes, 
+                audio_ext, 
+                chat_id, 
+                content_marker
+        )
 
-        tg.send_message(chat_id, 
-                        f'{output_text}                                             \
-                        \n\nSending an audio to model {model} and repeat ...'
-                        )
-
-        output_text = _audio2text_using_hf_model(model=model.name, audio_bytes=audio_bytes, chat_id=chat_id)
-        # output_text = 'Internal Server Error'
-
-        if 'Internal Server Error' in output_text \
-                or 'Service Unavailable' in output_text \
-                or 'the token seems invalid' in output_text \
-                or 'payload reached size limit' in output_text \
-                or 'Сообщение об ошибке от Hugging Face' in output_text:
-
-            output_text = f'{content_marker}\nmodel: {model} \
-                            \n\nText: Error: {output_text} \
-                            \n\nTrying to use hugging face space ({cfg.HUGGING_FACE_SPACE}) ...'
-            warning(output_text)
-            tg.send_message(chat_id, output_text)
-            
-            output_text = _audio2text_using_hf_space(audio_bytes=audio_bytes,
-                                                        audio_ext=audio_ext,
-                                                        chat_id=chat_id,
-                                                        tg_message_prefix=content_marker)
-
-            if not 'Internal Server Error' in output_text \
-                    and not 'Service Unavailable' in output_text \
-                    and not 'the token seems invalid' in output_text \
-                    and not 'payload reached size limit' in output_text \
-                    and not 'Сообщение об ошибке от Hugging Face' in output_text \
-                    and not 'Failed' in output_text:
-
-                output_text = f'{content_marker}\nSpace: {cfg.HUGGING_FACE_SPACE} \
-                                \n\nText: {output_text} \
-                                \n\nCalc time: {int(time.time() - start_time)} seconds'
-                return output_text
-    
-            while 'Internal Server Error' in output_text \
-                    or 'Service Unavailable' in output_text \
-                    or 'the token seems invalid' in output_text \
-                    or 'payload reached size limit' in output_text \
-                    or 'Сообщение об ошибке от Hugging Face' in output_text \
-                    or 'Failed' in output_text:
-                        
-                if model.name == hf.downgrade(model.name):
-                    message = f"Can't downgrade the smallest model.\n\nFinish"
-                    warning(message)
-                    tg.send_message(chat_id, message=message)
-                    
-                    output_text = f'{content_marker}\nHugging face model: {model} \
-                            \n\nText: {output_text} \
-                            \n\nCalc time: {int(time.time() - start_time)} seconds'
-                    return output_text
-                
-                warning(output_text)
-                tg.send_message(chat_id, 
-                        f'{output_text}                                             \
-                        \n\nDowngrade Hugging face model to {hf.downgrade(model)} and repeat.    \
-                        \nSending an audio to Hugging face ...'
-                        )
-
-                model = Model(model.site, hf.downgrade(model.name))
-                output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
-
-    return output_text
+    return output_text, model_name
     
 
 def _get_text_from_media(message: dict, chat_id: int) -> str:
@@ -402,7 +221,6 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
     warning('start')
     debug(f'{message = }')
     
-    model = Model('Deepgram', cfg.DEEPGRAM_MODEL)
     content_marker = _get_content_marker(message)
 
     tg.send_message(chat_id, f'{content_marker} \
@@ -418,11 +236,12 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
 
     else:
         audio_bytes, audio_ext = _get_audio_bytes_from_tg(media_url=media_url, message=message)
-        output_text = _get_text_from_audio(audio_bytes=audio_bytes,
+        output_text, model_name = _get_text_from_audio(audio_bytes=audio_bytes,
                                            audio_ext=audio_ext,
                                            chat_id=chat_id,
-                                           content_marker=content_marker)
-    output_text = f"{content_marker}\nModel: {model}" \
+                                           content_marker=content_marker,
+                                           )
+    output_text = f"{content_marker}\nModel: {model_name}" \
             f"\n\nText: {output_text}" \
             f"\n\nCalc time: {int(time.time() - start_time)} seconds"
 
@@ -528,7 +347,7 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
                         # output_text = _summarize(input_text, message_marker, chat_id)
                         return '', NONAME
                 else:
-                    output_text = _get_text_from_audio(audio_bytes=audio_bytes,
+                    output_text, model_name = _get_text_from_audio(audio_bytes=audio_bytes,
                             audio_ext=audio_ext,
                             chat_id=chat_id,
                             content_marker=message_marker)
@@ -547,19 +366,6 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
     debug(f'{output_text = }')
     warning('finish')
     return output_text, name
-
-
-def _init_logging() -> None:
-    root_logger = logging.getLogger()
-    if root_logger.handlers:
-        for handler in root_logger.handlers:
-            root_logger.removeHandler(handler)
-    datefmt='%H:%M:%S'
-    FORMAT = "[%(asctime)s %(filename)20s:%(lineno)5s - %(funcName)25s() ] %(message)s"
-    logging.basicConfig(level=cfg.LOG_LEVEL,
-                        format=FORMAT, 
-                        datefmt=datefmt,
-                        stream=sys.stdout)
 
 
 def telegram_long_polling():

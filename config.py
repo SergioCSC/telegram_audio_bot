@@ -8,6 +8,7 @@ OPEN_AI_API_KEY = environ.get('OPEN_AI_API_KEY')
 TELEGRAM_BOT_TOKEN = environ['TELEGRAM_BOT_TOKEN']
 HUGGING_FACE_API_KEY = environ['HUGGING_FACE_API_KEY']
 DEEPGRAM_API_KEY = environ.get('DEEPGRAM_API_KEY')
+GROQ_API_KEY = environ.get('GROQ_API_KEY')
 GEMINI_API_KEY = environ.get('GEMINI_API_KEY')
 
 HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
@@ -20,6 +21,7 @@ HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
 #                                     #  'meta-llama/Llama-3.1-8B' -- too big (16gb > 10gb)
 #                            )
 
+GROQ_MODEL = environ.get('GROQ_MODEL', 'whisper-large-v3-turbo')
 DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
 
 GEMINI_PRO_MODEL = environ.get('GEMINI_PRO_MODEL', 'gemini-1.5-pro')
