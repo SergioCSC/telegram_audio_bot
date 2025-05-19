@@ -1,5 +1,5 @@
 import config as cfg
-import tg_userbot
+# import tg_userbot
 import transcoder
 
 import requests

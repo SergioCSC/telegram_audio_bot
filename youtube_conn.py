@@ -75,7 +75,7 @@ def download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
     temp_dir = tempfile.gettempdir()
 
     ydl_opts = {
-        # 'format': 'worstaudio',
+        'format': 'worstaudio',
 
         # 'format': 'bestaudio/best',
         # 'postprocessors': [{
@@ -88,17 +88,22 @@ def download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
         'outtmpl': f'{temp_dir}/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
         'logtostderr': True
     }
+    try:
+        yt = YouTube(video_url)
+        audio_streams = yt.streams.filter(only_audio=True)
+        stream = yt.streams.get_by_itag(139)
+        audio_filename = stream.download()
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            ydl.download([video_url])
-            info_dict = ydl.extract_info(video_url, download = True)
-            audio_filename = ydl.prepare_filename(info_dict)
-        except DownloadError as e:
-            error_message = f"Error downloading audio: {e}"
-            error(error_message)
-            tg.send_message(chat_id, error_message)
-            return b'', ''
+    # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #     try:
+    #         ydl.download([video_url])
+    #         info_dict = ydl.extract_info(video_url, download = True)
+    #         audio_filename = ydl.prepare_filename(info_dict)
+    except DownloadError as e:
+        error_message = f"Error downloading audio: {e}"
+        error(error_message)
+        tg.send_message(chat_id, error_message)
+        return b'', ''
 
     if not audio_filename:
         error_message = f"Error downloading audio: {audio_filename}"

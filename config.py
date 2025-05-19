@@ -6,7 +6,7 @@ IN_LINUX = sys.platform == 'linux'
 
 OPEN_AI_API_KEY = environ.get('OPEN_AI_API_KEY')
 TELEGRAM_BOT_TOKEN = environ['TELEGRAM_BOT_TOKEN']
-HUGGING_FACE_API_KEY = environ['HUGGING_FACE_API_KEY']
+HUGGING_FACE_API_KEY = environ.get('HUGGING_FACE_API_KEY')
 DEEPGRAM_API_KEY = environ.get('DEEPGRAM_API_KEY')
 GROQ_API_KEY = environ.get('GROQ_API_KEY')
 GEMINI_API_KEY = environ.get('GEMINI_API_KEY')
@@ -24,8 +24,8 @@ HUGGING_FACE_MODEL = environ.get('HUGGING_FACE_MODEL',
 GROQ_MODEL = environ.get('GROQ_MODEL', 'whisper-large-v3-turbo')
 DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
 
-GEMINI_PRO_MODEL = environ.get('GEMINI_PRO_MODEL', 'gemini-1.5-pro')
-GEMINI_FLASH_MODEL = environ.get('GEMINI_FLASH_MODEL', 'gemini-2.0-flash')
+GEMINI_1ST_MODEL = environ.get('GEMINI_1ST_MODEL', 'gemini-2.0-flash-lite')
+GEMINI_2ND_MODEL = environ.get('GEMINI_2ND_MODEL', 'gemini-2.5-flash-preview-04-17')
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
                                  # 'nlogn/openai-whisper-small')

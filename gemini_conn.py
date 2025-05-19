@@ -14,12 +14,14 @@ genai.configure(api_key=cfg.GEMINI_API_KEY)
 
 def summarize(chat_id: int, text: str) -> str:
 
-    short_length = cfg.TEXT_LENGTH_TO_SUMMARIZE // 4
-    long_length = cfg.TEXT_LENGTH_TO_SUMMARIZE * 3 // 4
+    APPROXIMATE_RUSSIAN_WORD_LENGTH = 5
+    short_length = (cfg.TEXT_LENGTH_TO_SUMMARIZE // 4) // APPROXIMATE_RUSSIAN_WORD_LENGTH
+    long_length = (cfg.TEXT_LENGTH_TO_SUMMARIZE * 3 // 4) // APPROXIMATE_RUSSIAN_WORD_LENGTH
     length_restriction_prompt = f"Please make 2 summaries: short and long." \
-            f" Short summary should be exactly {short_length} characters." \
-            f" Long summary should be exactly {long_length} characters." \
-            f" Divide each summary into paragraphs, but don't mark them."
+            f" Short summary should be exactly {short_length} words." \
+            f" Long summary should be exactly {long_length} words." \
+            f" Divide each summary into paragraphs, but don't mark them." \
+            f" Don't use markdown."
             # f" Use asterics symbol before and after each summary header as a markdown symbol."
 
     prompt = f"You are a very professional document summarization specialist." \
@@ -28,25 +30,9 @@ def summarize(chat_id: int, text: str) -> str:
             f" {length_restriction_prompt}: {text}"
     
     try:
-        model_name = cfg.GEMINI_PRO_MODEL
-        tg.send_message(chat_id, "Try with Gemini model: " + model_name)
-        model = genai.GenerativeModel(model_name=model_name)
-        response = model.generate_content(prompt,
-            # generation_config=genai.types.GenerationConfig(
-            #         # max_output_tokens=50,
-            #         # temperature=1.0,
-            #         )
-        )
+        response = _model_query(cfg.GEMINI_1ST_MODEL, prompt, chat_id)
     except ResourceExhausted as e:
-        model_name = cfg.GEMINI_FLASH_MODEL
-        tg.send_message(chat_id, "Try with Gemini model: " + model_name)
-        model = genai.GenerativeModel(model_name=model_name)
-        response = model.generate_content(prompt,
-            # generation_config=genai.types.GenerationConfig(
-            #         # max_output_tokens=50,
-            #         # temperature=1.0,
-            #         )
-        )
+        response = _model_query(cfg.GEMINI_2ND_MODEL, prompt, chat_id)
     return response.text
 
 
@@ -72,7 +58,7 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
         temp_file.close()
     
         try:
-            model_name = cfg.GEMINI_PRO_MODEL
+            model_name = cfg.GEMINI_1ST_MODEL
             
             print("List of models that support generateContent:\n")
             for m in genai.list_models():
@@ -90,7 +76,7 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
             model_response = model.generate_content([prompt, uploaded_file])
         except ResourceExhausted as e:
             try:
-                model_name = cfg.GEMINI_FLASH_MODEL
+                model_name = cfg.GEMINI_2ND_MODEL
                 tg.send_message(chat_id, "Try with Gemini model: " + model_name)
                 model = genai.GenerativeModel(model_name=model_name)
                 uploaded_file = genai.upload_file(temp_file.name)
@@ -101,6 +87,19 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
             return f'{model_name} failed\n{mime_type = }\n{file_ext = }\nException: {str(e)}'
 
     return model_response.text
+
+
+def _model_query(model_name: str, prompt: str, chat_id: int) -> str:
+    
+    tg.send_message(chat_id, "Try with Gemini model: " + model_name)
+    model = genai.GenerativeModel(model_name=model_name)
+    response = model.generate_content(prompt,
+        # generation_config=genai.types.GenerationConfig(
+        #         # max_output_tokens=50,
+        #         # temperature=1.0,
+        #         )
+    )
+    return response
 
 
 if __name__ == "__main__":
