@@ -50,3 +50,5 @@ TEXT_LENGTH_TO_SUMMARIZE = int(environ.get('TEXT_LENGTH_TO_SUMMARIZE', 4000))
 
 PERMITTED_TG_CHAT_USERNAMES = environ.get('PERMITTED_TG_CHAT_USERNAMES', '').split(',')
 PERMITTED_TG_CHAT_USERNAMES = [username.strip() for username in PERMITTED_TG_CHAT_USERNAMES if username.strip()]
+
+YOUTUBE_CFG_NONAME = ''

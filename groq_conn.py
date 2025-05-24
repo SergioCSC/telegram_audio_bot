@@ -2,8 +2,6 @@ import config as cfg
 from data_structures import Model
 from utils import _sizeof_fmt
 
-from groq import Groq, GroqError
-
 import tempfile
 
 import tg
@@ -28,6 +26,7 @@ def transcribe_audio(audio_bytes: bytes,
         audio_file.close()
 
         with open(audio_file.name, 'rb') as audio_file:
+            from groq import Groq, GroqError
             groq_client = Groq()
             try:
                 transcription = groq_client.audio.transcriptions.create(

@@ -1,6 +1,5 @@
 import config as cfg
 # import tg_userbot
-import transcoder
 
 import requests
 
@@ -132,6 +131,7 @@ def _get_audio_bytes_and_ext(media_bytes: str, message: dict) -> tuple[bytes, st
     if _is_video(message):
         video_ext = _get_video_ext(message)
         if video_ext:
+            import transcoder
             audio_bytes = transcoder.extract_mp3_from_video(media_bytes, video_ext)
             audio_ext = '.mp3'
         else:

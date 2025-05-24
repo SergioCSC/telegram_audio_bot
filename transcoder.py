@@ -9,9 +9,6 @@
 
 import config as cfg
 
-import requests
-import audio_extract
-
 import tempfile
 import pathlib
 import subprocess
@@ -52,6 +49,7 @@ def transcode_wav_to_mp3(wav_bytes: bytes) -> bytes:
 def transcode_opus_ogg_to_wav(source_url: str) -> bytes:
     debug('start')
     if cfg.IN_LINUX:
+        import requests
         response = requests.get(source_url)
         ogg_bytes = response.content
         opus_path = str(pathlib.Path('opus', 'opus_linux', 'opusdec'))
@@ -99,6 +97,7 @@ def extract_mp3_from_video(mp4_bytes: bytes, video_ext: str) -> bytes:
             video_file.close()
             audio_file.close()  # TODO why we have to close and open audio file?
 
+            import audio_extract
             with open(video_filename, 'rb') as video_file:
                 with open(audio_filename, 'wb') as audio_file:
                     audio_extract.extract_audio(input_path=video_filename,

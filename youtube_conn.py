@@ -29,8 +29,7 @@ import pathlib
 from logging import error, warning, info, debug
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
-NONAME = ''
-
+from config import YOUTUBE_CFG_NONAME as NONAME
 
 
 

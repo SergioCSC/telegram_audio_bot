@@ -4,7 +4,7 @@ import config as cfg
 import google.generativeai as genai
 from google.api_core.exceptions import InvalidArgument, ResourceExhausted
 
-import os
+# import os
 
 import tg
 
@@ -34,6 +34,19 @@ def summarize(chat_id: int, text: str) -> str:
     except ResourceExhausted as e:
         response = _model_query(cfg.GEMINI_2ND_MODEL, prompt, chat_id)
     return response.text
+
+
+def _model_query(model_name: str, prompt: str, chat_id: int) -> str:
+    
+    tg.send_message(chat_id, "Try with Gemini model: " + model_name)
+    model = genai.GenerativeModel(model_name=model_name)
+    response = model.generate_content(prompt,
+        # generation_config=genai.types.GenerationConfig(
+        #         # max_output_tokens=50,
+        #         # temperature=1.0,
+        #         )
+    )
+    return response
 
 
 def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) -> str:
@@ -87,19 +100,6 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
             return f'{model_name} failed\n{mime_type = }\n{file_ext = }\nException: {str(e)}'
 
     return model_response.text
-
-
-def _model_query(model_name: str, prompt: str, chat_id: int) -> str:
-    
-    tg.send_message(chat_id, "Try with Gemini model: " + model_name)
-    model = genai.GenerativeModel(model_name=model_name)
-    response = model.generate_content(prompt,
-        # generation_config=genai.types.GenerationConfig(
-        #         # max_output_tokens=50,
-        #         # temperature=1.0,
-        #         )
-    )
-    return response
 
 
 if __name__ == "__main__":

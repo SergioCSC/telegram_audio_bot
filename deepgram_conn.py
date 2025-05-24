@@ -4,8 +4,7 @@ import tg
 from utils import _sizeof_fmt
 from data_structures import Model
 import config as cfg
-import hugging_face_conn as hf
-from hugging_face_conn import _audio2text_using_hf_model, _audio2text_using_hf_space
+
 
 from deepgram import (
     DeepgramClient,
@@ -69,7 +68,8 @@ def transcribe_audio(audio_bytes: bytes,
                         f'{output_text}                                             \
                         \n\nSending an audio to model {model} and repeat ...'
                         )
-
+        # Try to use Hugging Face model
+        from hugging_face_conn import _audio2text_using_hf_model
         output_text = _audio2text_using_hf_model(model=model.name, audio_bytes=audio_bytes, chat_id=chat_id)
         # output_text = 'Internal Server Error'
 
@@ -85,6 +85,8 @@ def transcribe_audio(audio_bytes: bytes,
             warning(output_text)
             tg.send_message(chat_id, output_text)
             
+            # Try to use Hugging Face space
+            from hugging_face_conn import _audio2text_using_hf_space
             output_text = _audio2text_using_hf_space(audio_bytes=audio_bytes,
                                                         audio_ext=audio_ext,
                                                         chat_id=chat_id,
@@ -109,7 +111,8 @@ def transcribe_audio(audio_bytes: bytes,
                     or 'Сообщение об ошибке от Hugging Face' in output_text \
                     or 'Failed' in output_text:
                         
-                if model.name == hf.downgrade(model.name):
+                from hugging_face_conn import downgrade as hf_downgrade
+                if model.name == hf_downgrade(model.name):
                     message = f"Can't downgrade the smallest model.\n\nFinish"
                     warning(message)
                     tg.send_message(chat_id, message=message)
@@ -122,11 +125,11 @@ def transcribe_audio(audio_bytes: bytes,
                 warning(output_text)
                 tg.send_message(chat_id, 
                         f'{output_text}                                             \
-                        \n\nDowngrade Hugging face model to {hf.downgrade(model)} and repeat.    \
+                        \n\nDowngrade Hugging face model to {hf_downgrade(model)} and repeat.    \
                         \nSending an audio to Hugging face ...'
                         )
 
-                model = Model(model.site, hf.downgrade(model.name))
+                model = Model(model.site, hf_downgrade(model.name))
                 output_text = _audio2text_using_hf_model(model=model, audio_bytes=audio_bytes, chat_id=chat_id)
 
     return output_text, model.name

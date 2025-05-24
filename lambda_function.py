@@ -1,17 +1,24 @@
 
-import pathlib
+from datetime import datetime
+start_time = datetime.now()
+# print(f'\n\n{datetime.now() - start_time} START lambda_function.py')
+# import pathlib
+# print(f'{datetime.now() - start_time} import pathlib')
 import config as cfg
-import deepgram_conn
-from mark_it_down import mark_it_down
+# print(f'{datetime.now() - start_time} import config as cfg')
+
 import tg
-import transcoder
+# print(f'{datetime.now() - start_time} import tg')
 import groq_conn
-import gemini_conn
-import openai_conn
+# print(f'{datetime.now() - start_time} import groq_conn')
+# import openai_conn
+# print(f'{datetime.now() - start_time} import openai_conn')
 from utils import _init_logging, _sizeof_fmt
-import youtube_conn
-from youtube_conn import NONAME
-import hugging_face_conn as hf
+# print(f'{datetime.now() - start_time} from utils import _init_logging, _sizeof_fmt')
+from config import YOUTUBE_CFG_NONAME as NONAME
+# print(f'{datetime.now() - start_time} from config import YOUTUBE_CFG_NONAME as NONAME')
+# import hugging_face_conn as hf
+# print(f'{datetime.now() - start_time} import hugging_face_conn as hf')
 
 
 
@@ -21,11 +28,11 @@ import io
 import os
 import sys
 import time
-import httpx
-import tempfile
+# import httpx
+# import tempfile
 import requests
 import contextlib
-from contextlib import redirect_stdout
+# from contextlib import redirect_stdout
 import logging
 from logging import error, warning, info, debug
 from collections import namedtuple
@@ -181,6 +188,11 @@ def _get_audio_bytes_from_tg(media_url: str, message: dict) -> tuple[bytes, str]
                 video_ext = '.mp4'
             else:
                 warning(f'unknown video type. {message = }')
+        
+        # print(f'{datetime.now() - start_time} before import transcoder')
+        import transcoder
+        # print(f'{datetime.now() - start_time} after  import transcoder')
+
         audio_bytes = transcoder.extract_mp3_from_video(response.content, video_ext)
         audio_ext = '.mp3'
     else:
@@ -206,6 +218,9 @@ def _get_text_from_audio(audio_bytes: bytes, audio_ext: str,
     )
 
     if not output_text:
+        # print(f'{datetime.now() - start_time} before import deepgram_conn')
+        import deepgram_conn
+        # print(f'{datetime.now() - start_time} after  import deepgram_conn')
         output_text, model_name = deepgram_conn.transcribe_audio(
                 audio_bytes, 
                 audio_ext, 
@@ -256,6 +271,11 @@ def _summarize(message_marker: str, chat_id: int, text: str) -> str:
     tg.send_message(chat_id, chat_message)
     # output_text = hf.summarize(cfg.HUGGING_FACE_TEXT_MODEL,
     #                            text=text)  #, chat_temp=0)
+    
+    # print(f'{datetime.now() - start_time} before import gemini_conn')
+    import gemini_conn
+    # print(f'{datetime.now() - start_time} after import gemini_conn')
+
     output_text = gemini_conn.summarize(chat_id, text=text)
     debug(f'{output_text = }')
     warning('finish')
@@ -268,6 +288,11 @@ def _recognize(message_marker: str, chat_id: int,
     warning('start')
     chat_message = f'{message_marker}\n\nSending the {file_ext} file to Gemini for recognition ...'
     tg.send_message(chat_id, chat_message)
+    
+    # print(f'{datetime.now() - start_time} before import gemini_conn')
+    import gemini_conn
+    # print(f'{datetime.now() - start_time} after import gemini_conn')
+    
     output_text = gemini_conn.recognize(chat_id, mime_type=mime_type, file_ext=file_ext, file_bytes=file_bytes)
     debug(f'{output_text = }')
     warning('finish')
@@ -319,6 +344,9 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         file_bytes, file_size = tg.get_file_bytes_and_size(message, chat_id)
         
         if file_ext in MARK_IT_DOWN_EXTENSTIONS:
+            # print(f'{datetime.now() - start_time} before import mark_it_down')
+            from mark_it_down import mark_it_down
+            # print(f'{datetime.now() - start_time} after  import mark_it_down')
             output_text = mark_it_down(file_bytes, file_ext)
         else:
             output_text = _recognize(message_marker, chat_id, mime_type=mime_type, 
@@ -329,6 +357,10 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
             output_text = tg.get_bot_description(chat_id)
         elif _is_link(message):
             url = input_text.split()[0]
+            # print(f'{datetime.now() - start_time} before import youtube_conn')
+            import youtube_conn
+            # print(f'{datetime.now() - start_time} after  import youtube_conn')
+
             output_text, name = youtube_conn.download_subtitles(video_url=url)
             if name == NONAME:
                 audio_bytes, audio_ext = youtube_conn.download_audio_from_site(url, chat_id)
