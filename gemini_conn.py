@@ -15,8 +15,10 @@ genai.configure(api_key=cfg.GEMINI_API_KEY)
 def summarize(chat_id: int, text: str) -> str:
 
     APPROXIMATE_RUSSIAN_WORD_LENGTH = 5
-    short_length = (cfg.TEXT_LENGTH_TO_SUMMARIZE // 4) // APPROXIMATE_RUSSIAN_WORD_LENGTH
-    long_length = (cfg.TEXT_LENGTH_TO_SUMMARIZE * 3 // 4) // APPROXIMATE_RUSSIAN_WORD_LENGTH
+    wanted_words_count = cfg.MIN_TEXT_LENGTH_TO_SUMMARIZE // APPROXIMATE_RUSSIAN_WORD_LENGTH
+    short_length = wanted_words_count * 2 // 8
+    long_length  = wanted_words_count * 5 // 8
+
     length_restriction_prompt = f"Please make 2 summaries: short and long." \
             f" Short summary should be exactly {short_length} words." \
             f" Long summary should be exactly {long_length} words." \

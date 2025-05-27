@@ -51,7 +51,7 @@ def _send_text(chat_id: int,
         error(f'{chat_id = }. {content_marker = }. {text = }')
 
     file_ext = '.' + content_marker.lower().split('.')[-1]
-    if len(text) > cfg.TEXT_LENGTH_TO_SUMMARIZE \
+    if len(text) > cfg.MIN_TEXT_LENGTH_TO_SUMMARIZE \
             or is_subtitles \
             or file_ext == '.md':
         summary: str = _summarize(content_marker, chat_id, text)
