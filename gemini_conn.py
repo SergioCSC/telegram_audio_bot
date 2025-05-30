@@ -1,15 +1,14 @@
 import tempfile
 import config as cfg
 
-import google.generativeai as genai
-from google.api_core.exceptions import InvalidArgument, ResourceExhausted
-
+from google import genai
+from google.genai import types
+# from google.api_core.exceptions import InvalidArgument, ResourceExhausted
+from google.genai.errors import ServerError, ClientError, \
+        UnknownFunctionCallArgumentError, FunctionInvocationError
 # import os
 
 import tg
-
-
-genai.configure(api_key=cfg.GEMINI_API_KEY)
 
 
 def summarize(chat_id: int, text: str) -> str:
@@ -29,26 +28,10 @@ def summarize(chat_id: int, text: str) -> str:
     prompt = f"You are a very professional document summarization specialist." \
             f" Please summarize the given document into the Russian language." \
             f" Please keep the style and do not add any additional information." \
-            f" {length_restriction_prompt}: {text}"
+            f" {length_restriction_prompt}: "
     
-    try:
-        response = _model_query(cfg.GEMINI_1ST_MODEL, prompt, chat_id)
-    except ResourceExhausted as e:
-        response = _model_query(cfg.GEMINI_2ND_MODEL, prompt, chat_id)
-    return response.text
-
-
-def _model_query(model_name: str, prompt: str, chat_id: int) -> str:
-    
-    tg.send_message(chat_id, "Try with Gemini model: " + model_name)
-    model = genai.GenerativeModel(model_name=model_name)
-    response = model.generate_content(prompt,
-        # generation_config=genai.types.GenerationConfig(
-        #         # max_output_tokens=50,
-        #         # temperature=1.0,
-        #         )
-    )
-    return response
+    model_response = _model_query(prompt, text, chat_id)
+    return model_response
 
 
 def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) -> str:
@@ -66,42 +49,86 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
             f" Please give the full text from the given {document_type} into the Russian language." \
             f" Do not add any additional information."
 
-    with tempfile.NamedTemporaryFile(mode='wb', suffix=file_ext,
-            delete_on_close=False) as temp_file:
-    
-        temp_file.write(file_bytes)
-        temp_file.close()
-    
-        try:
-            model_name = cfg.GEMINI_1ST_MODEL
-            
-            print("List of models that support generateContent:\n")
-            for m in genai.list_models():
-                if "generateContent" in m.supported_generation_methods:
-                    print(f'generateContent: {m.name}')
+    model_response = _model_query(prompt, file_bytes, chat_id, mime_type)
+    return model_response
 
-            print("List of models that support embedContent:\n")
-            for m in genai.list_models():
-                if "embedContent" in m.supported_generation_methods:
-                    print(f'embedContent: {m.name}')
-            
-            tg.send_message(chat_id, "Try with Gemini model: " + model_name)
-            model = genai.GenerativeModel(model_name=model_name)
-            uploaded_file = genai.upload_file(temp_file.name)
-            model_response = model.generate_content([prompt, uploaded_file])
-        except ResourceExhausted as e:
-            try:
-                model_name = cfg.GEMINI_2ND_MODEL
-                tg.send_message(chat_id, "Try with Gemini model: " + model_name)
-                model = genai.GenerativeModel(model_name=model_name)
-                uploaded_file = genai.upload_file(temp_file.name)
-                model_response = model.generate_content([prompt, uploaded_file])
-            except (InvalidArgument, ValueError, FileNotFoundError) as e:
-                return f'{model_name} failed\n{mime_type = }\n{file_ext = }\nException: {str(e)}'
-        except (InvalidArgument, ValueError, FileNotFoundError) as e:
-            return f'{model_name} failed\n{mime_type = }\n{file_ext = }\nException: {str(e)}'
 
-    return model_response.text
+def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -> str:
+
+    def _subquery(prompt: str, model: str) -> types.GenerateContentResponse:
+        tg.send_message(chat_id, "Try with Gemini model: " + model)
+        
+        if isinstance(data, bytes):
+            response = client.models.generate_content(
+                model=model,
+                contents=[
+                    types.Part.from_bytes(
+                        data=data,
+                        mime_type=mime_type,
+                    ),
+                    prompt
+                ])
+            return response
+
+        if _is_youtube_link(data):
+            prompt = "Generate a paragraph in Russian that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes." 
+            #@param ["Generate a paragraph that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes.", 
+            # "Choose 5 key shots from this video and put them in a table with the timecode, text description of 10 words or less, and a list of objects visible in the scene (with representative emojis).",
+            # "Generate bullet points for the video. Place each bullet point into an object with the timecode of the bullet point in the video."
+            model = cfg.GEMINI_YOUTUBE_MODEL
+            tg.send_message(chat_id, "YouTube link detected. So using model: " + model)
+            response = client.models.generate_content(
+                model=model,
+                contents=types.Content(
+                    parts=[
+                        types.Part(
+                            file_data=types.FileData(file_uri=data),
+                            video_metadata=types.VideoMetadata(fps=0.2,)
+                        ),
+                        types.Part(text=prompt)
+                    ]
+                ),
+                config = types.GenerateContentConfig(
+                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW
+                ),
+            )
+            return response
+
+        # Assuming data is a string of text
+        prompt = prompt + data
+        response = client.models.generate_content(
+            model=model,
+            contents=[prompt]
+        )
+        return response
+    
+    client = genai.Client(api_key=cfg.GEMINI_API_KEY)
+    try:
+        response = _subquery(prompt, model=cfg.GEMINI_1ST_MODEL)
+    except (ServerError, ClientError, \
+        UnknownFunctionCallArgumentError, FunctionInvocationError) as e:
+        tg.send_message(chat_id, f"Gemini exception: {e}")
+        response = _subquery(prompt, model=cfg.GEMINI_2ND_MODEL)
+    return response.text
+
+
+def _is_link(input_text: str) -> bool:
+    input_text = str(input_text).lower().strip()
+    return input_text.startswith('https://')
+
+
+def _is_youtube_link(input_text: str) -> bool:
+    if not _is_link(input_text):
+        return False
+    input_text = str(input_text).lower().strip()
+    return input_text.startswith(
+        (
+            'https://youtu.be/',
+            'https://www.youtu.be/',
+            'https://youtube.com/',
+            'https://www.youtube.com/',
+        )
+    )
 
 
 if __name__ == "__main__":

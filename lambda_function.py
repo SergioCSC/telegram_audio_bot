@@ -40,6 +40,7 @@ from collections import namedtuple
 SUCCESSFULL_RESPONSE = {'statusCode': 200, 'body': 'Success'}
 UNSUCCESSFULL_RESPONSE = {'statusCode': 500, 'body': 'Failure'}
 EMPTY_RESPONSE_STR = 'EMPTY_RESPONSE_STR'
+ALREADY_SUMMARIZED_PREFIX = 'ALREADY_SUMMARIZED_PREFIX:\n\n'
 MARK_IT_DOWN_EXTENSTIONS = ('.xlsx', '.docx', '.pptx', '.zip', '.html', '.xml', '.csv')
 
 def _send_text(chat_id: int, 
@@ -51,14 +52,21 @@ def _send_text(chat_id: int,
         error(f'{chat_id = }. {content_marker = }. {text = }')
 
     file_ext = '.' + content_marker.lower().split('.')[-1]
-    if len(text) > cfg.MIN_TEXT_LENGTH_TO_SUMMARIZE \
-            or is_subtitles \
-            or file_ext == '.md':
+    if (len(text) > cfg.MIN_TEXT_LENGTH_TO_SUMMARIZE \
+                or is_subtitles \
+                or file_ext == '.md'
+            ) \
+            and not text.startswith(ALREADY_SUMMARIZED_PREFIX): \
+
         summary: str = _summarize(content_marker, chat_id, text)
         # summary = """Кризис Римской империи III века (235-285 гг.) характеризовался экономическим, социальным и политическим коллапсом.  Смерть Александра Севера в 235 г. ознаменовала начало "императорской чехарды" – смены 29 императоров, большинство из которых погибли насильственной смертью.  Период предшествовал гражданской войне 193-197 гг. и правлению династии Северов (193-235 гг.), характеризующейся "военной монархией".  Кризис разделился на три этапа. Первый (235-268 гг.) –  постоянные войны, налоговые перегрузки,  потеря ряда территорий (Дакия,  восточная Валахия).  Создана система дукатов – военных округов под командованием duces. Второй (кульминационный) этап (253-268 гг., правление Галлиена) – одновременные войны на нескольких фронтах (алеманны, франки, готы, персы),  дезинтеграция империи (Галльская империя, Пальмирское царство).  Галлиен провёл армейские реформы. Третий этап (268-285 гг.) – остановка варварских вторжений,  восстановление единства империи династией иллирийцев (Клавдий II, Аврелиан),  победы над внешними врагами.  Убийство Карина в 285 г. и приход Диоклетиана положили конец кризису и началу домината. Экономический спад проявлялся в аграризации, разрушении городов, упадке торговли и ремесла,  гиперинфляции из-за "порчи монет", переходе к натуральному обмену.  Послекризисное положение улучшилось частично, но общеимперский рынок был разрушен.\n"""
+        if summary.startswith(ALREADY_SUMMARIZED_PREFIX):
+            summary = summary[len(ALREADY_SUMMARIZED_PREFIX):]
         tg.send_message(chat_id, summary)
         tg.send_doc(chat_id, content_marker, text)
     else:
+        if text.startswith(ALREADY_SUMMARIZED_PREFIX):
+            text = text[len(ALREADY_SUMMARIZED_PREFIX):]
         tg.send_message(chat_id, text)
     warning('finish')
 
@@ -120,17 +128,6 @@ def _get_media_duration(message: dict) -> int:
             message.get('video', message.get('video_note', {})))) \
             .get('duration', -1)
     return duration
-
-
-def _is_link(message: dict) -> bool:
-        input_text = message.get('text')
-        input_text = str(input_text).lower().strip()
-
-        return input_text.startswith('https://')
-                # 'https://youtu.be/',
-                # 'https://www.youtu.be/',
-                # 'https://youtube.com/',
-                # 'https://www.youtube.com/'))
 
 
 def _get_content_marker(message: dict, message_text: str = '') -> str:
@@ -267,16 +264,16 @@ def _summarize(message_marker: str, chat_id: int, text: str) -> str:
 
     warning('start')
     debug(f'{text = }')
-    chat_message = f'{message_marker}\n\nSending the text to Gemini for summarization ...'
+
+
+    chat_message = f'{message_marker}\n\nSending to Gemini for summarization ...'
     tg.send_message(chat_id, chat_message)
-    # output_text = hf.summarize(cfg.HUGGING_FACE_TEXT_MODEL,
-    #                            text=text)  #, chat_temp=0)
-    
     # print(f'{datetime.now() - start_time} before import gemini_conn')
     import gemini_conn
     # print(f'{datetime.now() - start_time} after import gemini_conn')
 
     output_text = gemini_conn.summarize(chat_id, text=text)
+    output_text = f'{ALREADY_SUMMARIZED_PREFIX}{output_text}'
     debug(f'{output_text = }')
     warning('finish')
     return output_text
@@ -355,36 +352,9 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
     elif input_text:
         if input_text == '/start':
             output_text = tg.get_bot_description(chat_id)
-        elif _is_link(message):
-            url = input_text.split()[0]
-            # print(f'{datetime.now() - start_time} before import youtube_conn')
-            import youtube_conn
-            # print(f'{datetime.now() - start_time} after  import youtube_conn')
-
-            output_text, name = youtube_conn.download_subtitles(video_url=url)
-            if name == NONAME:
-                audio_bytes, audio_ext = youtube_conn.download_audio_from_site(url, chat_id)
-                if not audio_bytes:
-                    response = requests.get(url)
-                    conent_type = response.headers.get('content-type', '')
-                    if conent_type.startswith('text/html'):
-                        file_bytes = response.content
-                        file_ext = '.html'
-                        output_text = mark_it_down(file_bytes, file_ext)
-                        # output_text = _recognize(message_marker, chat_id, mime_type=conent_type, 
-                        #         file_ext=file_ext, file_bytes=file_bytes)
-                    else:
-                        # output_text = _summarize(input_text, message_marker, chat_id)
-                        return '', NONAME
-                else:
-                    output_text, model_name = _get_text_from_audio(audio_bytes=audio_bytes,
-                            audio_ext=audio_ext,
-                            chat_id=chat_id,
-                            content_marker=message_marker)
         else:
-            tg.send_message(chat_id, 'I have to think about it. Just a moment ...')
             input_text = _correct_prompt(input_text)
-            output_text = _summarize(input_text, message_marker, chat_id)
+            output_text = _summarize(message_marker, chat_id, input_text)
 
     else:
         error_message = f"Can't parse this type of Telegram message: {message}"

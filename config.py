@@ -26,6 +26,8 @@ DEEPGRAM_MODEL = environ.get('DEEPGRAM_MODEL', 'whisper-large')
 
 GEMINI_1ST_MODEL = environ.get('GEMINI_1ST_MODEL', 'gemini-2.0-flash-lite')
 GEMINI_2ND_MODEL = environ.get('GEMINI_2ND_MODEL', 'gemini-2.5-flash-preview-04-17')
+GEMINI_YOUTUBE_MODEL = environ.get('GEMINI_YOUTUBE_MODEL', 'gemini-2.5-flash-preview-05-20')
+
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
                                  # 'nlogn/openai-whisper-small')
