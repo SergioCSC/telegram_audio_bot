@@ -71,7 +71,9 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
             return response
 
         if _is_youtube_link(data):
-            prompt = "Generate a paragraph in Russian that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes." 
+            # prompt = "Generate a paragraph in Russian that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes." 
+            # prompt = "Transcribe the audio from this video into Russian" #  , giving timestamps for salient events in the audio. Provide timestamps without miliseconds!"
+            
             #@param ["Generate a paragraph that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes.", 
             # "Choose 5 key shots from this video and put them in a table with the timecode, text description of 10 words or less, and a list of objects visible in the scene (with representative emojis).",
             # "Generate bullet points for the video. Place each bullet point into an object with the timecode of the bullet point in the video."
@@ -88,9 +90,9 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
                         types.Part(text=prompt)
                     ]
                 ),
-                config = types.GenerateContentConfig(
-                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW
-                ),
+                # config = types.GenerateContentConfig(
+                #     media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW
+                # ),
             )
             return response
 
