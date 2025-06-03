@@ -229,7 +229,7 @@ def _get_text_from_audio(audio_bytes: bytes, audio_ext: str,
     
 
 def _get_text_from_media(message: dict, chat_id: int) -> str:
-    start_time = time.time()
+
     warning('start')
     debug(f'{message = }')
     
@@ -254,8 +254,7 @@ def _get_text_from_media(message: dict, chat_id: int) -> str:
                                            content_marker=content_marker,
                                            )
     output_text = f"{content_marker}\nModel: {model_name}" \
-            f"\n\nText: {output_text}" \
-            f"\n\nCalc time: {int(time.time() - start_time)} seconds"
+            f"\n\nText: {output_text}"
 
     return output_text
 
@@ -297,6 +296,8 @@ def _recognize(message_marker: str, chat_id: int,
 
 
 def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
+    start_time = time.time()
+    warning('start')
     
     if not message:
         error(f'{EMPTY_RESPONSE_STR}')
@@ -362,6 +363,8 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         output_text = "It seems I can't do what you want. \
                 I can answer to text and transcribe audio into text."
         output_text += '\n\n' + error_message        
+
+    output_text += f"\n\nCalc time: {int(time.time() - start_time)} seconds"
 
     debug(f'{output_text = }')
     warning('finish')
