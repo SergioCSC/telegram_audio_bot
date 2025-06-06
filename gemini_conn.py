@@ -85,7 +85,7 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
                     parts=[
                         types.Part(
                             file_data=types.FileData(file_uri=data),
-                            video_metadata=types.VideoMetadata(fps=0.1,)
+                            video_metadata=types.VideoMetadata(fps=0.01,)
                         ),
                         types.Part(text=prompt)
                     ]
