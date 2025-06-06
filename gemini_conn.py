@@ -90,9 +90,9 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
                         types.Part(text=prompt)
                     ]
                 ),
-                # config = types.GenerateContentConfig(
-                #     media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW
-                # ),
+                config = types.GenerateContentConfig(
+                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW
+                ),
             )
             return response
 
