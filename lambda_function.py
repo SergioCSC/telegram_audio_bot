@@ -146,22 +146,23 @@ def _get_content_marker(message: dict, message_text: str = '') -> str:
 
     sender = _get_sender_user(message)
     if audio_info := message.get('audio'):
-        return f'{sender}_{audio_info.get('performer', '')}_{audio_info.get('title', '')}'
+        return f'{audio_info.get('performer', '')}_{audio_info.get('title', '')}'
     if doc_filename := message.get('document',{}).get('file_name', ''):
         file_ext = '.' + doc_filename.lower().split('.')[-1]
         if file_ext in MARK_IT_DOWN_EXTENSTIONS:
-            return f'{sender}_{doc_filename}.md'
+            return f'{doc_filename}.md'
         else:
-            return f'{sender}_{doc_filename}'
+            return f'{doc_filename}'
     if caption := message.get('caption'):
-        return f'{sender}_{_first_words(caption)}'
+        return f'{_first_words(caption)}'
     if message.get('video') or message.get('video_note') or message.get('voice'):
         duration = _get_media_duration(message)
-        return f'{sender}_{duration}_seconds'
+        return f'{duration}_seconds'
     if message_text:
-        return f'{sender}_{_first_words(message_text)}'
+        return f'{_first_words(message_text)}'
     duration = _get_media_duration(message)
-    return f'{sender} Media duration: {duration} seconds'
+    duration_marker = f'Media duration: {duration} seconds' if duration > 0 else ''
+    return f'{duration_marker}'
 
 
 @contextlib.contextmanager

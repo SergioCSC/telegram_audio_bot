@@ -56,9 +56,9 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
 def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -> str:
 
     def _subquery(prompt: str, model: str) -> types.GenerateContentResponse:
-        tg.send_message(chat_id, "Try with Gemini model: " + model)
         
         if isinstance(data, bytes):
+            tg.send_message(chat_id, "Try with Gemini model: " + model)
             response = client.models.generate_content(
                 model=model,
                 contents=[
@@ -108,9 +108,18 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
     try:
         response = _subquery(prompt, model=cfg.GEMINI_1ST_MODEL)
     except (ServerError, ClientError, \
-        UnknownFunctionCallArgumentError, FunctionInvocationError) as e:
-        tg.send_message(chat_id, f"Gemini exception: {e}")
-        response = _subquery(prompt, model=cfg.GEMINI_2ND_MODEL)
+            UnknownFunctionCallArgumentError, FunctionInvocationError) as e:
+        error_str = f"Gemini exception: {e}" 
+        if "unsupported" in str(e).lower():
+            return error_str
+        else:
+            tg.send_message(chat_id, f"{error_str}\n\nTrying again ...")
+            try:
+                response = _subquery(prompt, model=cfg.GEMINI_2ND_MODEL)
+            except (ServerError, ClientError, \
+                    UnknownFunctionCallArgumentError, FunctionInvocationError) as e:
+                return f"Gemini exception: {e}"
+        
     return response.text
 
 
