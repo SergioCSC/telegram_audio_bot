@@ -5,40 +5,34 @@
 # https://developers.google.com/explorer-help/code-samples#python
 
 
+from config import YOUTUBE_CFG_NONAME as NONAME
 import tg
 
-import yt_dlp
-from yt_dlp.utils import DownloadError
-from pytubefix import YouTube
-# from pytube import YouTube
-# from pytube.download_helper import (
-#     download_videos_from_channels,
-#     download_video,
-#     download_videos_from_list,
-# )
-# from pytube.exceptions import PytubeError
-
-
 # import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
+# import googleapiclient.discovery
+# import googleapiclient.errors
 
-import os
-import tempfile
-import pathlib
+# import os
 from logging import error, warning, info, debug
 
-scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
-from config import YOUTUBE_CFG_NONAME as NONAME
-
+# scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
 
 def download_youtube_video(url, output_path="./"):
+    from pytubefix import YouTube
+    # from pytube import YouTube
+    # from pytube.download_helper import (
+    #     download_videos_from_channels,
+    #     download_video,
+    #     download_videos_from_list,
+    # )
+    # from pytube.exceptions import PytubeError
+
     try:
         # Create YouTube object
         youtube = YouTube(url)
 
-        import pytube
+        # import pytube
         # Fix regex issue
         # pytube.extract.regex_search = lambda pattern, string, group: ""  # Override with no-op if regex fails
         
@@ -71,6 +65,7 @@ def download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
 
     warning('start')
     debug(f'{video_url = }')
+    import tempfile
     temp_dir = tempfile.gettempdir()
 
     ydl_opts = {
@@ -87,7 +82,10 @@ def download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
         'outtmpl': f'{temp_dir}/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s.%(ext)s',
         'logtostderr': True
     }
+    from yt_dlp.utils import DownloadError
+    # import yt_dlp
     try:
+        from pytubefix import YouTube
         yt = YouTube(video_url)
         audio_streams = yt.streams.filter(only_audio=True)
         stream = yt.streams.get_by_itag(139)
@@ -113,6 +111,7 @@ def download_audio_from_site(video_url: str, chat_id: int) -> tuple[bytes, str]:
     with open(audio_filename, 'rb') as audio_file:
         mp4_audio_bytes = audio_file.read()  # TODO: mp4 ? really ?
 
+    import pathlib
     audio_file = pathlib.Path(audio_filename)
     if audio_file.exists():
         audio_file.unlink()
@@ -185,6 +184,7 @@ def download_subtitles(video_url: str,
 
 def _get_captions_dict_from_url(video_url: str) -> tuple[dict, str]:
     try:
+        from pytubefix import YouTube
         yt = YouTube(video_url)
         name: str = yt.title
         if name:
