@@ -4,6 +4,7 @@ import tg
 from utils import _sizeof_fmt
 from data_structures import Model
 import config as cfg
+from utils import sec2str
 
 
 from deepgram import (
@@ -101,7 +102,7 @@ def transcribe_audio(audio_bytes: bytes,
 
                 output_text = f'{content_marker}\nSpace: {cfg.HUGGING_FACE_SPACE} \
                                 \n\nText: {output_text} \
-                                \n\nCalc time: {int(time.time() - start_time)} seconds'
+                                \n\nCalc time: {sec2str(int(time.time() - start_time))} seconds'
                 return output_text
     
             while 'Internal Server Error' in output_text \
@@ -119,7 +120,7 @@ def transcribe_audio(audio_bytes: bytes,
                     
                     output_text = f'{content_marker}\nHugging face model: {model} \
                             \n\nText: {output_text} \
-                            \n\nCalc time: {int(time.time() - start_time)} seconds'
+                            \n\nCalc time: {sec2str(int(time.time() - start_time))} seconds'
                     return output_text
                 
                 warning(output_text)

@@ -3,6 +3,24 @@ import config as cfg
 import logging
 import sys
 
+def sec2str(seconds: int) -> str:
+    """Convert seconds to a human-readable string."""
+    if seconds < 0:
+        return "-1 sec"
+    seconds = int(seconds)  # Ensure seconds is an integer
+    sec_str = f"{seconds % 60:02d}"
+    minutes_str = f"{(seconds // 60) % 60:02d}"
+    hours_str = f"{(seconds // 3600) % 24:02d}"
+    days = seconds // 86400
+    if days > 0:
+        return f"{days}d {hours_str}h {minutes_str}m {sec_str}s"
+    elif (seconds // 3600) % 24 > 0:
+        return f"{hours_str}h {minutes_str}m {sec_str}s"
+    elif (seconds // 60) % 60 > 0:
+        return f"{minutes_str}m {sec_str}s"
+    else:
+        return f"{sec_str}s"
+    
 
 def _sizeof_fmt(num:int, suffix: str = "B") -> str:
     for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):

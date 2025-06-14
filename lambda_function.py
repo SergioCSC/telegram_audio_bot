@@ -1,5 +1,6 @@
 
 from datetime import datetime
+from utils import sec2str
 start_time = datetime.now()
 # print(f'\n\n{datetime.now() - start_time} START lambda_function.py')
 # import pathlib
@@ -25,7 +26,6 @@ from config import YOUTUBE_CFG_NONAME as NONAME
 # from dotenv import load_dotenv
 
 import io
-import os
 import sys
 import time
 # import httpx
@@ -162,7 +162,7 @@ def _get_content_marker(message: dict) -> str:
         return f'{_first_words(caption)}'
     duration_sec: int = _get_media_duration(message)
     if duration_sec > 0:
-        return  f'Media duration: {duration_sec} seconds' if duration_sec > 0 else ''
+        return  f'Media duration: {sec2str(duration_sec)}' if duration_sec > 0 else ''
 
     if message_text := message.get('text'):
         return f'{_first_words(message_text)}'
@@ -192,9 +192,9 @@ def _get_audio_bytes_from_tg(media_url: str, message: dict) -> tuple[bytes, str]
             else:
                 warning(f'unknown video type. {message = }')
         
-        # print(f'{datetime.now() - start_time} before import transcoder')
+        # print(f'{sec2str(datetime.now() - start_time)} before import transcoder')
         import transcoder
-        # print(f'{datetime.now() - start_time} after  import transcoder')
+        # print(f'{sec2str(datetime.now() - start_time)} after  import transcoder')
 
         audio_bytes = transcoder.extract_mp3_from_video(response.content, video_ext)
         audio_ext = '.mp3'
@@ -221,9 +221,9 @@ def _get_text_from_audio(audio_bytes: bytes, audio_ext: str,
     )
 
     if not output_text:
-        # print(f'{datetime.now() - start_time} before import deepgram_conn')
+        # print(f'{sec2str(datetime.now() - start_time)} before import deepgram_conn')
         import deepgram_conn
-        # print(f'{datetime.now() - start_time} after  import deepgram_conn')
+        # print(f'{sec2str(datetime.now() - start_time)} after  import deepgram_conn')
         output_text, model_name = deepgram_conn.transcribe_audio(
                 audio_bytes, 
                 audio_ext, 
@@ -273,9 +273,9 @@ def _summarize(message_marker: str, chat_id: int, text: str) -> str:
 
     chat_message = f'{message_marker}\n\nSending to Gemini for summarization ...'
     tg.send_message(chat_id, chat_message)
-    # print(f'{datetime.now() - start_time} before import gemini_conn')
+    # print(f'{sec2str(datetime.now() - start_time)} before import gemini_conn')
     import gemini_conn
-    # print(f'{datetime.now() - start_time} after import gemini_conn')
+    # print(f'{sec2str(datetime.now() - start_time)} after import gemini_conn')
 
     output_text = gemini_conn.summarize(chat_id, text=text)
     output_text = f'{ALREADY_SUMMARIZED_PREFIX}{output_text}'
@@ -291,9 +291,9 @@ def _recognize(message_marker: str, chat_id: int,
     chat_message = f'{message_marker}\n\nSending the {file_ext} file to Gemini for recognition ...'
     tg.send_message(chat_id, chat_message)
     
-    # print(f'{datetime.now() - start_time} before import gemini_conn')
+    # print(f'{sec2str(datetime.now() - start_time)} before import gemini_conn')
     import gemini_conn
-    # print(f'{datetime.now() - start_time} after import gemini_conn')
+    # print(f'{sec2str(datetime.now() - start_time)} after import gemini_conn')
     
     output_text = gemini_conn.recognize(chat_id, mime_type=mime_type, file_ext=file_ext, file_bytes=file_bytes)
     debug(f'{output_text = }')
@@ -348,9 +348,9 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
         file_bytes, file_size = tg.get_file_bytes_and_size(message, chat_id)
         
         if file_ext in MARK_IT_DOWN_EXTENSTIONS:
-            # print(f'{datetime.now() - start_time} before import mark_it_down')
+            # print(f'{sec2str(datetime.now() - start_time)} before import mark_it_down')
             from mark_it_down import mark_it_down
-            # print(f'{datetime.now() - start_time} after  import mark_it_down')
+            # print(f'{sec2str(datetime.now() - start_time)} after  import mark_it_down')
             output_text = mark_it_down(file_bytes, file_ext)
         else:
             output_text = _recognize(message_marker, chat_id, mime_type=mime_type, 
@@ -372,9 +372,9 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
 
     duration_sec = _get_media_duration(message=message)
     calc_time = int(time.time() - start_time)
-    media_duration_marker = f"\n\nMedia duration: {duration_sec} seconds" if duration_sec > 0 else ""
+    media_duration_marker = f"\n\nMedia duration: {sec2str(duration_sec)}" if duration_sec > 0 else ""
     output_text += media_duration_marker
-    output_text += f"\n\nCalc time: {calc_time} seconds"
+    output_text += f"\n\nCalc time: {sec2str(calc_time)}"
     if duration_sec > 0 and calc_time > 0:
         output_text += f"\nSpeed up: {round(duration_sec / calc_time, 1)} x"
 
@@ -414,7 +414,7 @@ def telegram_long_polling():
                 content_marker = name if name else _get_content_marker(message)
                 _send_text(chat_id, result_text, content_marker, is_subtitles)
         end_time = time.time()
-        warning(f'time between requests to Telegram Bot API: {end_time - start_time}')
+        warning(f'time between requests to Telegram Bot API: {sec2str(end_time - start_time)}')
 
 
 def main():
