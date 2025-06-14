@@ -1,4 +1,3 @@
-import tempfile
 import config as cfg
 
 from google import genai
@@ -9,6 +8,7 @@ from google.genai.errors import ServerError, ClientError, \
 # import os
 
 import tg
+from logging import error, info, debug
 
 
 def summarize(chat_id: int, text: str) -> str:
@@ -70,22 +70,31 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
                 ])
             return response
 
-        if _is_youtube_link(data):
+        from youtube_conn import is_youtube_link
+        if is_youtube_link(data):
             # prompt = "Generate a paragraph in Russian that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes." 
             # prompt = "Transcribe the audio from this video into Russian" #  , giving timestamps for salient events in the audio. Provide timestamps without miliseconds!"
-            
+            # prompt = "Don't analyze the video. Just summarize the subtitles from it and return them in Russian." \
+            # " If there are no subtitles, then summarize the text of the audio in Russian." \
             #@param ["Generate a paragraph that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes.", 
             # "Choose 5 key shots from this video and put them in a table with the timecode, text description of 10 words or less, and a list of objects visible in the scene (with representative emojis).",
             # "Generate bullet points for the video. Place each bullet point into an object with the timecode of the bullet point in the video."
             model = cfg.GEMINI_YOUTUBE_MODEL
             tg.send_message(chat_id, "YouTube link detected. So using model: " + model)
+            
+            from youtube_conn import get_duration_from_youtube_link
+            video_duration_sec = get_duration_from_youtube_link(data)
+
+            frames_to_analyze = 2
+            fps = frames_to_analyze * 1.0 / video_duration_sec
+            
             response = client.models.generate_content(
                 model=model,
                 contents=types.Content(
                     parts=[
                         types.Part(
                             file_data=types.FileData(file_uri=data),
-                            video_metadata=types.VideoMetadata(fps=0.01,)
+                            video_metadata=types.VideoMetadata(fps=fps,)
                         ),
                         types.Part(text=prompt)
                     ]
@@ -121,25 +130,6 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
                 return f"Gemini exception: {e}"
         
     return response.text
-
-
-def _is_link(input_text: str) -> bool:
-    input_text = str(input_text).lower().strip()
-    return input_text.startswith('https://')
-
-
-def _is_youtube_link(input_text: str) -> bool:
-    if not _is_link(input_text):
-        return False
-    input_text = str(input_text).lower().strip()
-    return input_text.startswith(
-        (
-            'https://youtu.be/',
-            'https://www.youtu.be/',
-            'https://youtube.com/',
-            'https://www.youtube.com/',
-        )
-    )
 
 
 if __name__ == "__main__":

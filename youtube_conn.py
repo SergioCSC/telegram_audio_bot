@@ -13,9 +13,100 @@ import tg
 # import googleapiclient.errors
 
 # import os
+from functools import cache
 from logging import error, warning, info, debug
 
 # scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
+
+
+def _is_link(input_text: str) -> bool:
+    input_text = str(input_text).lower().strip()
+    return input_text.startswith('https://')
+
+
+def is_youtube_link(input_text: str) -> bool:
+    if not _is_link(input_text):
+        return False
+    input_text = str(input_text).lower().strip()
+    return input_text.startswith(
+        (
+            'https://youtu.be/',
+            'https://www.youtu.be/',
+            'https://youtube.com/',
+            'https://www.youtube.com/',
+        )
+    )
+
+
+def get_youtube_video_id(url: str) -> str:
+    """
+    Extracts the YouTube video ID from a given URL.
+
+    Args:
+        url (str): The YouTube video URL.
+
+    Returns:
+        str: The extracted video ID.
+    """
+    import re
+    pattern = r'(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/))([a-zA-Z0-9_-]{11})'
+    match = re.search(pattern, url)
+    if match:
+        return match.group(1)
+    else:
+        error(f"Invalid YouTube URL: {url}")
+        return ''
+
+@cache
+def get_youtube_video_duration(video_id: str) -> int:
+    """
+    Retrieves the duration of a YouTube video by its ID.
+
+    Args:
+        video_id (str): The YouTube video ID.
+
+    Returns:
+        int: The duration of the video in seconds. 
+        Returns -1 if the video is not found or an error occurs.
+    """
+    from config import GEMINI_API_KEY
+    query_url = f"https://www.googleapis.com/youtube/v3/videos" \
+            f"?id={video_id}&key={GEMINI_API_KEY}" \
+            f"&part=contentDetails&fields=items(contentDetails(duration))"
+    try:
+        import requests
+        response = requests.get(query_url).json()
+        if 'items' in response and response['items']:
+            # Extract the duration from the response
+            duration_str = response.get('items', [{}])[0] \
+                    .get('contentDetails', {}).get('duration', '-1')
+            # Convert ISO 8601 duration to seconds
+            import isodate
+            duration = isodate.parse_duration(duration_str).total_seconds()
+            if duration < 0:
+                error(f"Invalid duration for video ID: {video_id}")
+                return -1
+            return int(duration)
+        else:
+            error(f"No video found for ID: {video_id}")
+            return -1
+    except Exception as e:
+        error(f"Error retrieving video duration: {e}")
+        return -1
+
+
+def get_duration_from_youtube_link(url: str) -> int:
+    video_id = get_youtube_video_id(url)
+    if not video_id:
+        error("Failed to get video ID from the YouTube link.")
+        return -1
+
+    video_duration_sec: int = get_youtube_video_duration(video_id)
+    if not video_duration_sec:
+        error("Failed to get video duration from the YouTube link.")
+        return -1
+
+    return video_duration_sec
 
 
 def download_youtube_video(url, output_path="./"):
