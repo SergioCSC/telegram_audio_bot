@@ -8,9 +8,9 @@ def sec2str(seconds: int) -> str:
     if seconds < 0:
         return "-1 sec"
     seconds = int(seconds)  # Ensure seconds is an integer
-    sec_str = f"{seconds % 60:02d}"
-    minutes_str = f"{(seconds // 60) % 60:02d}"
-    hours_str = f"{(seconds // 3600) % 24:02d}"
+    sec_str = f"{seconds % 60:01d}"  # :02d formats the number with leading zeros if needed
+    minutes_str = f"{(seconds // 60) % 60:01d}"
+    hours_str = f"{(seconds // 3600) % 24:01d}"
     days = seconds // 86400
     if days > 0:
         return f"{days}d {hours_str}h {minutes_str}m {sec_str}s"

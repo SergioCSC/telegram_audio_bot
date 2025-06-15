@@ -378,9 +378,9 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
     if duration_sec > 0 and calc_time > 0:
         speed_up = duration_sec * 1.0 / calc_time
         if speed_up < 3:
-            output_text += f"\nSpeed up: {round(speed_up, 1)} x"
+            output_text += f"\nSpeed up: {speed_up:.1f}x"
         else:
-            output_text += f"\nSpeed up: {round(speed_up, 0)} x"
+            output_text += f"\nSpeed up: {speed_up:.0f}x"
 
     debug(f'{output_text = }')
     warning('finish')
