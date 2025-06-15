@@ -85,8 +85,7 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
             from youtube_conn import get_duration_from_youtube_link
             video_duration_sec = get_duration_from_youtube_link(data)
 
-            frames_to_analyze = 1
-            fps = frames_to_analyze * 1.0 / video_duration_sec
+            fps = cfg.FRAMES_TO_ANALYZE * 1.0 / video_duration_sec
             
             response = client.models.generate_content(
                 model=model,

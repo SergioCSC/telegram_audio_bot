@@ -49,6 +49,7 @@ LOG_LEVEL = environ.get('LOG_LEVEL', 'WARNING')
 
 MAX_MEDIA_SIZE = int(environ.get('MAX_MEDIA_SIZE', 20)) * 1024 * 1024  # 20 MB
 MIN_TEXT_LENGTH_TO_SUMMARIZE = int(environ.get('MIN_TEXT_LENGTH_TO_SUMMARIZE', 4000))
+FRAMES_TO_ANALYZE = int(environ.get('FRAMES_TO_ANALYZE', 2))  # number of frames to analyze in video
 
 PERMITTED_TG_CHAT_USERNAMES = environ.get('PERMITTED_TG_CHAT_USERNAMES', '').split(',')
 PERMITTED_TG_CHAT_USERNAMES = [username.strip() for username in PERMITTED_TG_CHAT_USERNAMES if username.strip()]
