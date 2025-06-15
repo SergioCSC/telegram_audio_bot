@@ -374,7 +374,7 @@ def _get_text_and_name(message: dict, chat_temp: float = 1) -> tuple[str, str]:
     calc_time = int(time.time() - start_time)
     media_duration_marker = f"\n\nMedia duration: {sec2str(duration_sec)}" if duration_sec > 0 else ""
     output_text += media_duration_marker
-    output_text += f"\n\nCalc time: {sec2str(calc_time)}"
+    output_text += f"\nCalc time: {sec2str(calc_time)}"
     if duration_sec > 0 and calc_time > 0:
         output_text += f"\nSpeed up: {round(duration_sec / calc_time, 1)} x"
 
