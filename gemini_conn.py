@@ -55,31 +55,29 @@ def recognize(chat_id: int, mime_type: str, file_ext: str, file_bytes: bytes) ->
 
 def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -> str:
 
-    def _subquery(prompt: str, model: str) -> types.GenerateContentResponse:
+    from youtube_conn import is_youtube_link
+    
+    def _subquery(prompt: str, data: str | bytes, model: str) -> types.GenerateContentResponse:
         
-        if isinstance(data, bytes):
-            tg.send_message(chat_id, "Try with Gemini model: " + model)
-            response = client.models.generate_content(
-                model=model,
-                contents=[
-                    types.Part.from_bytes(
-                        data=data,
-                        mime_type=mime_type,
-                    ),
-                    prompt
-                ])
-            return response
+        if isinstance(data, str) and is_youtube_link(data):
 
-        from youtube_conn import is_youtube_link
-        if is_youtube_link(data):
+            prompt = """
+                    Analyze the following YouTube video content. Provide a concise summary in Russian covering:
+                    1.  Main Thesis/Claim: What is the central point the creator is making?
+                    2.  Key Topics: List the main subjects discussed, referencing specific examples or technologies mentioned (e.g., AI models, programming languages, projects).
+                    3.  Call to Action: Identify any explicit requests made to the viewer.
+                    4.  Summary: Provide a concise summary of the video content.
+                    Use the provided title, chapter timestamps/descriptions, and description text for your analysis.
+                    Don't use a markdown.
+            """
+
             # prompt = "Generate a paragraph in Russian that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes." 
             # prompt = "Transcribe the audio from this video into Russian" #  , giving timestamps for salient events in the audio. Provide timestamps without miliseconds!"
             # prompt = "Don't analyze the video. Just summarize the subtitles from it and return them in Russian." \
             # " If there are no subtitles, then summarize the text of the audio in Russian." \
-            #@param ["Generate a paragraph that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes.", 
+            # @param ["Generate a paragraph that summarizes this video. Keep it to 3 to 5 sentences with corresponding timecodes.", 
             # "Choose 5 key shots from this video and put them in a table with the timecode, text description of 10 words or less, and a list of objects visible in the scene (with representative emojis).",
             # "Generate bullet points for the video. Place each bullet point into an object with the timecode of the bullet point in the video."
-            model = cfg.GEMINI_YOUTUBE_MODEL
             tg.send_message(chat_id, "YouTube link detected. So using model: " + model)
             
             from youtube_conn import get_duration_from_youtube_link
@@ -87,6 +85,12 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
 
             fps = cfg.FRAMES_TO_ANALYZE * 1.0 / video_duration_sec
             
+            config = types.GenerateContentConfig(
+                media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW,
+                system_instruction=prompt,
+                temperature=0.1,
+                thinking_config=types.ThinkingConfig(thinking_budget=0) if not model.startswith('gemini-2.0') else None,  # Disables thinking
+            )
             response = client.models.generate_content(
                 model=model,
                 contents=types.Content(
@@ -95,35 +99,59 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
                             file_data=types.FileData(file_uri=data),
                             video_metadata=types.VideoMetadata(fps=fps,)
                         ),
-                        types.Part(text=prompt)
+                        # types.Part(text=prompt)
                     ]
                 ),
-                config = types.GenerateContentConfig(
-                    media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW
-                ),
+                config=config,
+            )
+            return response
+
+        elif isinstance(data, bytes):
+            tg.send_message(chat_id, "Try with Gemini model: " + model)
+            config = types.GenerateContentConfig(
+                system_instruction=prompt,
+                temperature=0.1,
+                thinking_config=types.ThinkingConfig(thinking_budget=0) if not model.startswith('gemini-2.0') else None,  # Disables thinking
+            )
+            response = client.models.generate_content(
+                model=model,
+                contents=[
+                    types.Part.from_bytes(
+                        data=data,
+                        mime_type=mime_type,
+                    ),
+                ],
+                config=config,
             )
             return response
 
         # Assuming data is a string of text
-        prompt = prompt + data
+        config = types.GenerateContentConfig(
+            system_instruction=prompt,
+            temperature=0.1,
+            thinking_config=types.ThinkingConfig(thinking_budget=0) if not model.startswith('gemini-2.0') else None,  # Disables thinking
+        )
         response = client.models.generate_content(
-            model=model,
-            contents=[prompt]
+                model=model,
+                contents=[data],
+                config = config,
         )
         return response
     
     client = genai.Client(api_key=cfg.GEMINI_API_KEY)
+    model = cfg.GEMINI_YOUTUBE_MODEL_1ST_MODEL if is_youtube_link(data) else cfg.GEMINI_1ST_MODEL
     try:
-        response = _subquery(prompt, model=cfg.GEMINI_1ST_MODEL)
+        response = _subquery(prompt, data=data, model=model)
     except (ServerError, ClientError, \
             UnknownFunctionCallArgumentError, FunctionInvocationError) as e:
         error_str = f"Gemini exception: {e}" 
         if "unsupported" in str(e).lower():
             return error_str
         else:
-            tg.send_message(chat_id, f"{error_str}\n\nTrying again ...")
+            model = cfg.GEMINI_YOUTUBE_MODEL_2ND_MODEL if is_youtube_link(data) else cfg.GEMINI_2ND_MODEL
+            tg.send_message(chat_id, f"{error_str}\n\nTrying again with {model = }")
             try:
-                response = _subquery(prompt, model=cfg.GEMINI_2ND_MODEL)
+                response = _subquery(prompt, data=data, model=model)
             except (ServerError, ClientError, \
                     UnknownFunctionCallArgumentError, FunctionInvocationError) as e:
                 return f"Gemini exception: {e}"
