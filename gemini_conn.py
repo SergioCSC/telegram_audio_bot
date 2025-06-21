@@ -83,7 +83,10 @@ def _model_query(prompt: str, data: str | bytes, chat_id: int, mime_type=None) -
             from youtube_conn import get_duration_from_youtube_link
             video_duration_sec = get_duration_from_youtube_link(data)
 
-            fps = cfg.FRAMES_TO_ANALYZE * 1.0 / video_duration_sec
+            if video_duration_sec != -1:
+                fps = cfg.FRAMES_TO_ANALYZE * 1.0 / video_duration_sec
+            else:
+                fps = 0.1
             
             config = types.GenerateContentConfig(
                 media_resolution=types.MediaResolution.MEDIA_RESOLUTION_LOW,

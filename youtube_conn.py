@@ -49,13 +49,35 @@ def get_youtube_video_id(url: str) -> str:
         str: The extracted video ID.
     """
     import re
-    pattern = r'(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/))([a-zA-Z0-9_-]{11})'
-    match = re.search(pattern, url)
-    if match:
-        return match.group(1)
-    else:
-        error(f"Invalid YouTube URL: {url}")
-        return ''
+    from urllib.parse import urlparse, parse_qs
+    
+    # pattern = r'(?:https?://)?(?:www\.)?(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|v/|shorts/))([a-zA-Z0-9_-]{11})'
+    # match = re.search(pattern, url)
+    # if match:
+    #     return match.group(1)
+    # else:
+    #     error(f"Invalid YouTube URL: {url}")
+    #     return ''
+    
+    parsed_url = urlparse(url)
+
+    # Handle different types of YouTube URL structures
+    if parsed_url.hostname in ('youtu.be',):
+        return parsed_url.path.lstrip('/')
+
+    if parsed_url.hostname in ('www.youtube.com', 'youtube.com', 'm.youtube.com'):
+        if parsed_url.path == '/watch':
+            query_params = parse_qs(parsed_url.query)
+            return query_params.get('v', [None])[0]
+        elif parsed_url.path.startswith('/embed/'):
+            return parsed_url.path.split('/')[2]
+        elif parsed_url.path.startswith('/v/'):
+            return parsed_url.path.split('/')[2]
+        elif parsed_url.path.startswith('/live/'):
+            return parsed_url.path.split('/')[2]
+
+    error(f"Invalid YouTube URL: {url}")
+    return ''
 
 @cache
 def get_youtube_video_duration(video_id: str) -> int:
@@ -95,6 +117,7 @@ def get_youtube_video_duration(video_id: str) -> int:
         return -1
 
 
+@cache
 def get_duration_from_youtube_link(url: str) -> int:
     video_id = get_youtube_video_id(url)
     if not video_id:
@@ -102,7 +125,7 @@ def get_duration_from_youtube_link(url: str) -> int:
         return -1
 
     video_duration_sec: int = get_youtube_video_duration(video_id)
-    if not video_duration_sec:
+    if video_duration_sec == -1:
         error("Failed to get video duration from the YouTube link.")
         return -1
 

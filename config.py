@@ -28,7 +28,7 @@ GEMINI_1ST_MODEL = environ.get('GEMINI_1ST_MODEL', 'gemini-2.5-flash-lite-previe
 GEMINI_2ND_MODEL = environ.get('GEMINI_2ND_MODEL', 'gemini-2.0-flash-lite')
 
 GEMINI_YOUTUBE_MODEL_1ST_MODEL = environ.get('GEMINI_YOUTUBE_MODEL_1ST_MODEL', 'gemini-2.5-flash-lite-preview-06-17')
-GEMINI_YOUTUBE_MODEL_2ND_MODEL = environ.get('GEMINI_YOUTUBE_MODEL_2ND_MODEL', 'gemini-2.5-flash-preview-05-20')
+GEMINI_YOUTUBE_MODEL_2ND_MODEL = environ.get('GEMINI_YOUTUBE_MODEL_2ND_MODEL', 'gemini-2.0-flash-lite')
 
 
 HUGGING_FACE_SPACE = environ.get('HUGGING_FACE_SPACE',
